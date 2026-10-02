@@ -205,9 +205,12 @@ Run `sync` daily from your laptop, never from MN5:
 uv run mn5track schedule install --hour 7     # macOS launchd agent; `show` prints the plist
 ```
 
-The agent runs `sync`, regenerates the dashboards (`dashboard --all`), then runs `alerts`. It shows a macOS notification if either reports a problem,
-and logs to `~/Library/Logs/mn5track.log`. A Claude Code routine that runs `/compute-sync` then
-`/compute-status` also works. What matters is snapshotting often enough to capture an
+The agent runs `sync`, regenerates the dashboards (`dashboard --all`), then runs `alerts`. It
+shows a macOS notification if either reports a problem, and logs to `~/Library/Logs/mn5track.log`.
+
+On Linux, or to get the alerts on your phone, use a [Hermes Agent](#using-with-hermes-agent) cron
+job instead (`schedule hermes`). An agent routine that runs the `compute-sync` and then the
+`compute-status` skill also works. What matters is snapshotting often enough to capture an
 allocation's final numbers before membership is revoked.
 
 ## Commands
@@ -216,7 +219,7 @@ allocation's final numbers before membership is revoked.
 | --- | --- |
 | `sync [--full] [--since YYYY-MM-DD]` | Incremental sacct pull (last Submit − 7 days) plus snapshots |
 | `status` | Budget, used, % used, expiry, burn-rate projection, visibility |
-| `alerts` | Exit 1 when: ≥80 % used, expiring within 30 days, projected to run out, vanished, stale sync |
+| `alerts [--message]` | Exit 1 when: ≥80 % used, expiring within 30 days, projected to run out, vanished, stale sync. `--message`: plain text for chat, silent when there is nothing to report |
 | `report --by month\|account\|project\|state\|queue\|jobname-prefix\|partition\|workdir` | Aggregated usage, success rate, waste, timeouts |
 | `top [--n 20] [--families]` | Most expensive jobs or job-name families |
 | `explain <jobid>` | Every stored field, and which attribution rule matched |
@@ -229,6 +232,7 @@ allocation's final numbers before membership is revoked.
 | `chart monthly\|burndown [--out charts/]` | PNG + self-contained HTML |
 | `reparse` | Rebuild the database from the stored raw outputs |
 | `schedule install\|uninstall\|show` | Daily launchd sync on macOS |
+| `schedule hermes [--deliver telegram]` | Write the Hermes Agent cron script and print the `hermes cron create` command |
 
 Filters: `--project`, `--account`, `--from`, `--to`, `--partition acc|gpp`. Output:
 `--format table|md|csv|json`. JSON schemas are versioned (`mn5track.<command>/vN`).
@@ -336,14 +340,18 @@ shows `ConsumedEnergyRaw` only for GPP jobs.
 | Personal config | `config/tracker.yaml` | no |
 | Contribution files | `contributions/` | no |
 | Personal Claude settings and `hpc-*` commands | `.claude/settings*.json`, `.claude/commands/hpc-*.md` | no |
-| Shared config, code, `compute-*` skills | repo | yes |
+| Code, example configs, `compute-*` skills | repo | yes |
 
 - Snapshots are append-only. When an allocation disappears from `bsc_acct`, its last snapshot is
   reported as its final state, with the date it was taken.
 - Colleagues' names from `bsc_acct` stay in the local database. Statements only ever say "other
   project members".
 
-## Claude Code skills
+## Agent skills
+
+The skills live in [`.agents/skills/`](.agents/skills/), one `SKILL.md` per skill in the open
+[Agent Skills](https://agentskills.io) format, so the same files work in Claude Code and Hermes
+Agent. Claude Code reads them through the `.claude/skills` symlink.
 
 | Skill | Does |
 | --- | --- |
@@ -357,9 +365,65 @@ shows `ConsumedEnergyRaw` only for GPP jobs.
 Agents follow the rules in [`AGENTS.md`](AGENTS.md): read-only on MN5, every number from JSON
 output, allocation vs project always explicit, no names in publishable text.
 
+### Using with Hermes Agent
+
+[Hermes Agent](https://hermes-agent.nousresearch.com) reads `AGENTS.md` as its project context
+and the skills from `.agents/skills/`.
+
+1. Install Hermes and start it once in this repository. Then trust the project skills (needed
+   once per repository):
+
+   ```bash
+   cd energy4mn5_public && hermes skills trust
+   ```
+
+2. The skills are now slash commands: `/compute-status`, `/compute-report how much GPU time did
+   geofm use in 2026?`, and so on.
+3. Daily snapshots with alerts sent to a chat:
+
+   ```bash
+   uv run mn5track schedule hermes --hour 7 --deliver telegram
+   # then run the `hermes cron create ...` command it prints
+   ```
+
+   The job runs without a model (`--no-agent`). It is silent when there is nothing to report,
+   sends the alerts when there are some, and sends an error with the log tail if the sync
+   fails. If your config is not in this repository's `config/`, set `MN5TRACK_CONFIG` before
+   running `schedule hermes`; the script keeps it.
+   Cron jobs fire from the Hermes gateway, so keep it running (`hermes gateway install`
+   installs it as a service).
+4. Optional: a weekly summary written by the agent. Cron sessions do not start inside this
+   repository, so first make the skills available everywhere in `~/.hermes/config.yaml`:
+
+   ```yaml
+   skills:
+     external_dirs:
+       - ~/Documents/GitHub/energy4mn5_public/.agents/skills
+   ```
+
+   then:
+
+   ```bash
+   hermes cron create "0 8 * * 1" \
+     "In ~/Documents/GitHub/energy4mn5_public, summarise MN5 allocation status, risks first" \
+     --skill compute-status --deliver telegram --name mn5track-weekly
+   ```
+
+Before you rely on it:
+
+- **Approvals.** The tracker enforces read-only access to MN5 in code, but an agent with a
+  terminal could still ssh to MN5 itself. Keep Hermes' command approval on (`smart` or
+  `manual`), and consider a custom dangerous-command pattern for `ssh` and `sbatch`.
+- **Model.** The answer rules (numbers only from JSON, allocation vs project, debug vs
+  production failures) depend on the model following them. Check a few answers against
+  `--format json` output when you switch models.
+- **Data.** The model provider receives whatever the agent reads, including colleagues'
+  names in local `bsc_acct` tables. A local model keeps that on your machine.
+
 ## Project layout
 
 ```
+.agents/skills/    compute-* skills (Agent Skills format; .claude/skills links here)
 config/            project.example.yaml, tracker.example.yaml (templates; real files gitignored)
 src/mn5_tracker/
   remote.py        ssh runner: host fallback, sentinel markers, read-only allowlist

@@ -15,7 +15,8 @@ Key paths:
   hosts). Tests use `config/project.example.yaml`; never copy real names into it.
 - **Database:** `~/.local/share/mn5-tracker/tracker.db` (override with `MN5TRACK_DB`); raw
   gzipped command outputs live next to it under `raw/<date>/`
-- **Skills:** `.claude/commands/compute-*.md`
+- **Skills:** `.agents/skills/compute-*/SKILL.md` (Agent Skills format, used by Hermes Agent and,
+  via the `.claude/skills` symlink, Claude Code). Keep the five body sections in each.
 - **Tests:** `tests/`, fixtures captured from MN5 and sanitised in `tests/fixtures/`
 
 ## Rules for agents
@@ -64,7 +65,7 @@ the user's own bsc_acct rows and warns when they differ by more than 10 %.
 | --- | --- |
 | `sync [--full] [--since D]` | Pull sacct, snapshot bsc_acct/associations/groups/quota |
 | `status` | Budget, used %, expiry, burn projection, visibility per allocation |
-| `alerts` | Exit 1 with a list of budget/expiry/exhaustion/visibility/stale alerts |
+| `alerts [--message]` | Exit 1 with a list of budget/expiry/exhaustion/visibility/stale alerts; `--message` for chat |
 | `report [--by ...] [filters]` | Aggregated usage, success rate, waste, timeouts |
 | `project-lifetime P` | Lifetime usage: own + contributions + bsc_acct fallback per person |
 | `top [--families]` | Most expensive jobs or job-name families |
@@ -77,7 +78,7 @@ the user's own bsc_acct rows and warns when they differ by more than 10 %.
 | `export P` / `import FILES` | Share own aggregated usage / import other members' files |
 | `contributors [--project P]` | Imported contributions, freshness, rules match |
 | `reparse` | Rebuild tables from the stored raw outputs |
-| `schedule install\|uninstall\|show` | Daily launchd sync on the Mac |
+| `schedule install\|uninstall\|show\|hermes` | Daily sync: launchd on the Mac, or a Hermes Agent cron script |
 
 Every command accepts `--format json` (stable schemas named `mn5track.<command>/v1`).
 

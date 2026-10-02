@@ -23,7 +23,7 @@ from mn5_tracker.aggregation import (
     top_jobs,
     total,
 )
-from mn5_tracker.alerts import evaluate_alerts
+from mn5_tracker.alerts import Alert, evaluate_alerts
 from mn5_tracker.allocation_status import AllocationStatus, compute_statuses
 from mn5_tracker.attribution import explain_attribution
 from mn5_tracker.config import Config, find_db_path, load_config
@@ -75,6 +75,7 @@ class ScheduleAction(StrEnum):
     install = "install"
     uninstall = "uninstall"
     show = "show"
+    hermes = "hermes"
 
 
 FormatOption = Annotated[OutputFormat, typer.Option("--format", "-f", help="Output format.")]
@@ -512,12 +513,25 @@ ALERT_COLUMNS = (
 
 
 @app.command()
-def alerts(output_format: FormatOption = OutputFormat.table) -> None:
+def alerts(
+    output_format: FormatOption = OutputFormat.table,
+    message: Annotated[
+        bool,
+        typer.Option(
+            "--message",
+            help="Plain text for chat delivery: nothing when there are no alerts, always exit 0.",
+        ),
+    ] = False,
+) -> None:
     """List budget, expiry, exhaustion, visibility and stale-data alerts; exit 1 if any."""
     config, store = open_context()
     today = date.today()
     found = evaluate_alerts(config, store, compute_statuses(config, store, today), today)
     rows = [asdict(alert) for alert in found]
+
+    if message:
+        print(alert_message(found), end="")
+        return
 
     if not found and output_format != OutputFormat.json:
         console.print("[green]No alerts.[/green]")
@@ -525,6 +539,18 @@ def alerts(output_format: FormatOption = OutputFormat.table) -> None:
         emit(console, output_format, "Alerts", ALERT_COLUMNS, rows, envelope("alerts", alerts=rows))
 
     raise typer.Exit(1 if found else 0)
+
+
+def alert_message(found: list[Alert]) -> str:
+    """One line per alert, critical first; empty when there is nothing to report."""
+    if not found:
+        return ""
+
+    ordered = sorted(found, key=lambda alert: alert.severity != "critical")
+    lines = [f"MN5 compute tracker: {len(found)} alert{'s' if len(found) > 1 else ''}"]
+    lines += [f"- [{alert.severity}] {alert.message}" for alert in ordered]
+
+    return "\n".join(lines) + "\n"
 
 
 @app.command()
@@ -743,8 +769,12 @@ def reparse(output_format: FormatOption = OutputFormat.table) -> None:
 def schedule(
     action: ScheduleAction,
     hour: Annotated[int, typer.Option(help="Local hour for the daily sync.")] = 7,
+    deliver: Annotated[
+        str, typer.Option(help="hermes: delivery target, e.g. telegram or slack:#hpc.")
+    ] = "telegram",
 ) -> None:
-    """Install/uninstall/show a macOS launchd job that runs `mn5track sync` daily."""
+    """Daily sync: a macOS launchd job (install/uninstall/show), or a Hermes Agent cron script
+    (hermes)."""
     if action == ScheduleAction.show:
         print(scheduling.render_plist(hour), end="")
         return
@@ -752,6 +782,12 @@ def schedule(
     if action == ScheduleAction.install:
         path = scheduling.install(hour)
         console.print(f"Installed {path}; daily sync at {hour:02d}:00. Logs: {scheduling.LOG_PATH}")
+        return
+
+    if action == ScheduleAction.hermes:
+        path = scheduling.install_hermes_script()
+        console.print(f"Wrote {path}. Register it with Hermes (once):")
+        print(scheduling.hermes_cron_command(hour, deliver))
         return
 
     scheduling.uninstall()
