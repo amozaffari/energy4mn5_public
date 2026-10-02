@@ -1,0 +1,138 @@
+# Example shared project configuration (placeholder allocations and projects; the tests use it).
+# Copy to config/project.yaml (gitignored) and fill in your own; share that file with project
+# members privately so everyone uses the same attribution rules.
+# Personal settings (MN5 username, ssh hosts) live in config/tracker.yaml (gitignored).
+# Allocation dates are the first/last job seen in sacct unless a note says otherwise.
+
+first_job_date: 2024-04-01
+
+# sinfo/scontrol are blocked by PrivateData=nodes, so these are cross-checked against the sacct
+# billing TRES at every sync instead (see `mn5track sync` warnings).
+node_types:
+  acc:
+    partition_prefixes: [acc]
+    bsc_acct_machine: Marenostrum5 ACC
+    gpus: 4
+    gpu_model: H100
+    physical_cores: 80
+    hw_threads: 160
+  gpp:
+    partition_prefixes: [gpp]
+    bsc_acct_machine: Marenostrum5 GPP
+    gpus: 0
+    physical_cores: 112
+    hw_threads: 224
+
+sync:
+  overlap_days: 7
+  include_quota: true
+
+allocations:
+  bsc32:
+    title: Example Research Group
+    kind: institutional
+    shared: true
+    note: Institutional group budget, shared by many unrelated projects; budget undefined.
+  ehpc105:
+    title: unknown (lapsed before tracking)
+    kind: eurohpc
+    start: 2025-06-02
+    end: 2026-03-03
+    note: Lapsed before tracking began; members' own sacct history only.
+  ehpc106:
+    title: unknown (lapsed before tracking)
+    kind: eurohpc
+    start: 2025-09-12
+    end: 2026-02-23
+    note: Lapsed before tracking began; members' own sacct history only.
+  ehpc101:
+    title: Example allocation A
+    kind: eurohpc
+    start: 2026-03-26
+    end: 2027-02-20
+  ehpc107:
+    title: unknown (lapsed before tracking)
+    kind: eurohpc
+    start: 2026-04-14
+    end: 2026-06-01
+    note: Lapsed before tracking began; members' own sacct history only.
+  ehpc102:
+    title: Example allocation B
+    kind: eurohpc
+    role: storage-only
+    start: 2026-06-04
+    end: 2027-05-04
+    note: Mainly storage, but it also has an ACC compute budget.
+  ehpc103:
+    title: Example allocation C
+    kind: eurohpc
+    start: 2026-06-10
+    end: 2026-12-10
+  ehpc104:
+    title: Example allocation D
+    kind: eurohpc
+    end: 2026-10-01
+  cns101:
+    title: unknown (RES allocation)
+    kind: res
+    note: RES allocation used for short tests.
+
+# Dedicated allocations listed here contribute colleagues' bsc_acct usage to `project-lifetime`.
+# Shared allocations (bsc32) never do, because their other users work on unrelated projects.
+projects:
+  geofm:
+    title: GeoFM
+    allocations_hint: [ehpc105, ehpc106, ehpc101, ehpc107, ehpc102, ehpc103, ehpc104]
+  hydro:
+    title: HYDRO
+  emulator:
+    title: Emulator
+  prototype:
+    title: Prototype
+  adoption-study:
+    title: Adoption study
+
+# Ordered, first match wins. All conditions given in one rule must hold.
+# Keys: workdir_glob, jobname_glob, account_in, submitted_from, submitted_until.
+attribution_rules:
+  - {project: geofm, workdir_glob: "*/git/geofm*"}
+  - {project: hydro, workdir_glob: "*/hydro/*"}
+  - {project: emulator, workdir_glob: "*/git/emulator*"}
+  - {project: prototype, workdir_glob: "*/git/prototype*"}
+  - {project: adoption-study, workdir_glob: "*/git/adoption-study*"}
+  - {project: geofm, account_in: [ehpc101, ehpc102, ehpc103, ehpc104]}
+
+# Jobs in these QOS are development work: their failures are expected and reported separately
+# from production failures ("wasted compute").
+queues:
+  development_qos: [acc_debug, gp_debug, acc_interactive, gp_interactive]
+
+# Energy and carbon model (Green Algorithms-style: energy = power × time × PUE; CO2e = energy ×
+# grid intensity). Everything below is an ASSUMPTION until `verified: true`; replace values with
+# sourced ones and record the source under `sources`.
+energy:
+  verified: false
+  pue: 1.2
+  acc:
+    gpu_power_w: 700          # H100 SXM board power (TDP)
+    host_power_w: 600         # 2 × Xeon 8460Y+, memory, NICs; anchored on the GPP IPMI measurement
+    gpu_utilisation: {low: 0.4, central: 0.65, high: 0.9}   # share of GPU TDP drawn on average
+  gpp:
+    node_power_w: 663         # fallback only; recalibrated at runtime from full-node IPMI jobs
+  grid:
+    g_per_kwh: 150            # location-based Spanish grid intensity, g CO2e/kWh
+    by_period: {}             # optional overrides: {"2025": 130, "2026-01": 160}
+    market_g_per_kwh: null    # set if BSC's electricity contract is certified renewable
+  embodied_kg_per_node_hour: {}   # optional scope 3, e.g. {acc: 0.2, gpp: 0.05}; empty = not reported
+  sources:
+    pue: "UNVERIFIED placeholder; ask BSC operations for MareNostrum 5's annual PUE"
+    acc_gpu_power_w: "NVIDIA H100 SXM datasheet (700 W TDP); verify the MN5 H100 64GB variant"
+    acc_host_power_w: "Estimate; GPP full-node IPMI measurement on MN5 was 663 W (Sep 2026)"
+    acc_gpu_utilisation: "Assumption for ML training; replace with CodeCarbon measurements (phase 2)"
+    gpp_node_power_w: "IPMI ConsumedEnergyRaw of exclusive GPP jobs on MN5 (Sep 2026)"
+    grid: "UNVERIFIED placeholder; use Red Electrica (REE) or Electricity Maps values for Spain"
+
+alerts:
+  used_pct_warn: 80
+  expiry_days_warn: 30
+  stale_sync_days: 3

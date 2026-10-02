@@ -1,0 +1,13 @@
+Set INTEL compilers as MPI wrappers backend
+load impi/2021.10.0 (PATH, MANPATH, LD_LIBRARY_PATH)
+load mkl/2023.2.0 (LD_LIBRARY_PATH)
+load UCX/1.15.0 (PATH, LD_LIBRARY_PATH, LIBRARY_PATH, C_INCLUDE_PATH,
+CPLUS_INCLUDE_PATH) 
+load bsc/1.0 (PATH, MANPATH)
+__BEGIN__
+bsc32||acc_bsces,acc_debug,acc_interactive,gp_bsces,gp_debug,gp_hbm,gp_interactive|bsc000000
+ehpc101||acc_debug,acc_ehpc,acc_interactive|bsc000000
+ehpc102||acc_debug,acc_ehpc,acc_interactive|bsc000000
+ehpc103||acc_debug,acc_ehpc,acc_interactive|bsc000000
+ehpc104||acc_debug,acc_ehpc,acc_interactive|bsc000000
+__END__

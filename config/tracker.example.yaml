@@ -1,0 +1,21 @@
+# Personal mn5-compute-tracker settings. Gitignored: never commit this file.
+# Shared settings (allocations, projects, attribution rules) come from config/project.yaml
+# (gitignored; start from project.example.yaml). Uncomment to keep it elsewhere:
+# project_config: ~/path/to/project.yaml
+
+user: bsc0XXXXX  # your MN5 username
+
+hosts:
+  primary: MN5G1
+  fallback: MN5ACC1
+  connect_timeout_s: 15
+  command_timeout_s: 300
+
+# Optional: where `mn5track dashboard --all` (and the daily schedule) writes, and which project
+# views to build besides your own. A Google Drive / Dropbox folder keeps them on every device.
+# dashboards:
+#   out_dir: "~/Library/CloudStorage/GoogleDrive-<you>/My Drive/mn5-tracker"
+#   projects: [geofm]
+# Optional: rules checked before the shared ones, for your own directory layout.
+# extra_attribution_rules:
+#   - {project: geofm, workdir_glob: "*/my_checkouts/geofm*"}

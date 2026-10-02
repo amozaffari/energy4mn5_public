@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MN5 Compute Tracker</title>
+<meta name="description" content="Record, attribute and report compute use on MareNostrum 5 before the system forgets it.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0;
+  --surface: #fcfcfb;
+  --border: #e4e3df;
+  --code: #efeeea;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --accent: #2a78d6;
+  --accent-soft: #dfe9f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #121211; --surface: #1a1a19; --border: #33332f; --code: #222220;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e87;
+    --accent: #3987e5; --accent-soft: #1f3350;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211; --surface: #1a1a19; --border: #33332f; --code: #222220;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e87;
+  --accent: #3987e5; --accent-soft: #1f3350;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text-primary);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1040px; margin: 0 auto; padding: 56px 16px 72px; }
+a { color: var(--accent); }
+h1 { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 0 0 16px; font-weight: 650;
+  letter-spacing: -0.02em; text-wrap: balance; }
+h2 { font-size: 24px; margin: 64px 0 8px; font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: 16px; margin: 0 0 4px; font-weight: 600; }
+p { margin: 0 0 12px; }
+.lede { font-size: 19px; color: var(--text-secondary); max-width: 46em; margin-bottom: 28px; }
+.section-sub { color: var(--text-secondary); max-width: 46em; margin-bottom: 24px; }
+.eyebrow { color: var(--text-muted); font-size: 13px; text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 12px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.button { display: inline-block; padding: 10px 18px; border-radius: 8px; font-weight: 600;
+  text-decoration: none; border: 1px solid var(--border); color: var(--text-primary);
+  background: var(--surface); }
+.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.demos { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 8px; }
+@media (min-width: 820px) { .demos { grid-template-columns: 1fr 1fr; } }
+.demo { display: block; text-decoration: none; color: inherit; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.demo:hover, .demo:focus-visible { border-color: var(--accent); }
+.demo img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--border); }
+.demo div { padding: 14px 16px 16px; }
+.demo p { color: var(--text-secondary); font-size: 14px; margin: 0; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; }
+.card p { color: var(--text-secondary); font-size: 15px; margin: 0; }
+.compare { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 760px) { .compare { grid-template-columns: 1fr 1fr; } }
+.compare .card code { font-size: 15px; }
+.compare dl { margin: 10px 0 0; font-size: 15px; }
+.compare dt { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
+.compare dd { margin: 0; }
+.callout { background: var(--accent-soft); border-radius: 12px; padding: 16px 18px;
+  margin-top: 16px; max-width: 46em; }
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); counter-reset: step; }
+.steps li { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; counter-increment: step; }
+.steps li::before { content: counter(step); display: inline-grid; place-items: center;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: #fff;
+  font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.steps p { color: var(--text-secondary); font-size: 15px; margin: 0; }
+code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.9em;
+  background: var(--code); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; overflow-x: auto; font-size: 14px; line-height: 1.55; margin: 0; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.formula { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 14px; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border);
+  vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; font-size: 14px; }
+footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border);
+  color: var(--text-muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="eyebrow">MareNostrum 5 · BSC</div>
+  <h1>Keep a permanent record of your MareNostrum&nbsp;5 compute use</h1>
+  <p class="lede">
+    <code>mn5track</code> snapshots Slurm and BSC accounting every day into a local database,
+    maps each job to the scientific project it belongs to, and reports budgets, lifetime
+    totals, wasted compute, and energy and carbon estimates. That history stays available after
+    MN5 stops showing it to you.
+  </p>
+  <div class="actions">
+    <a class="button primary" href="demo/project.html">Open the demo dashboard</a>
+    <a class="button" href="https://github.com/amozaffari/energy4mn5_public">Source on GitHub</a>
+  </div>
+</header>
+
+<section aria-labelledby="demo">
+  <h2 id="demo">See it on real data</h2>
+  <p class="section-sub">
+    Both dashboards come from real MN5 usage. Project, allocation and people names are replaced
+    by aliases; hours, dates and outcomes are unchanged. Each page is a single HTML file that
+    works offline. Hover any bar for exact values, or open "Show table" under a chart.
+  </p>
+  <div class="demos">
+    <a class="demo" href="demo/project.html">
+      <picture>
+        <source srcset="assets/project-dark.png" media="(prefers-color-scheme: dark)">
+        <img src="assets/project-light.png" width="1280" height="860" loading="lazy"
+             alt="Project dashboard: GPU-hour, success-rate and carbon tiles above a monthly usage chart stacked by allocation">
+      </picture>
+      <div>
+        <h3>Project view</h3>
+        <p>One project across every allocation it ran on: your jobs, other members'
+          contributions and BSC's own totals, with budget burn-down per allocation.</p>
+      </div>
+    </a>
+    <a class="demo" href="demo/personal.html">
+      <picture>
+        <source srcset="assets/personal-dark.png" media="(prefers-color-scheme: dark)">
+        <img src="assets/personal-light.png" width="1280" height="860" loading="lazy"
+             alt="Personal dashboard: tiles and monthly usage stacked by project">
+      </picture>
+      <div>
+        <h3>Personal view</h3>
+        <p>All of one user's jobs, split by project, allocation and queue, with outcomes and
+          the energy and carbon behind them.</p>
+      </div>
+    </a>
+  </div>
+</section>
+
+<section aria-labelledby="why">
+  <h2 id="why">Why MN5 "forgets"</h2>
+  <p class="section-sub">
+    MN5 keeps its accounting data, but each user sees only part of it, and part of what they
+    see disappears when they leave an allocation.
+  </p>
+  <div class="compare">
+    <div class="card">
+      <h3><code>sacct</code>: Slurm job accounting</h3>
+      <dl>
+        <dt>Shows</dt><dd>Only your own jobs; everyone else's are hidden</dd>
+        <dt>Visible</dt><dd>Forever, even after you leave the allocation</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3><code>bsc_acct</code>: BSC budget accounting</h3>
+      <dl>
+        <dt>Shows</dt><dd>Everyone's usage, the budget and the expiry date, as one running
+          total with no dates</dd>
+        <dt>Visible</dt><dd>Only while you are in the allocation's Unix group</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="callout">
+    When you are removed from an allocation, its budget and your colleagues' usage vanish from
+    view. Even while they are visible, you cannot ask what the total was last month. The
+    tracker keeps a dated copy every day, so the last copy becomes the permanent record.
+  </p>
+</section>
+
+<section aria-labelledby="how">
+  <h2 id="how">How it works</h2>
+  <p class="section-sub">A daily job on your laptop; MN5 is only ever read, never written.</p>
+  <ol class="steps">
+    <li>
+      <h3>Collect</h3>
+      <p>One ssh session runs <code>sacct</code>, <code>bsc_acct</code>, <code>sacctmgr</code>,
+        <code>id</code> and <code>bsc_quota</code>. An allowlist rejects anything that is not
+        read-only, so the tracker cannot submit or cancel jobs.</p>
+    </li>
+    <li>
+      <h3>Keep the raw output</h3>
+      <p>Every output is stored compressed before parsing. If MN5 changes a format, fix the
+        parser and replay the history with <code>mn5track reparse</code>.</p>
+    </li>
+    <li>
+      <h3>Store and check</h3>
+      <p>Jobs go into SQLite and are frozen once finished; budget snapshots are append-only.
+        Each sync reconciles your Slurm billing against BSC's totals and flags lost access.</p>
+    </li>
+    <li>
+      <h3>Attribute and report</h3>
+      <p>Ordered rules on working directory, job name, account and date map jobs to projects.
+        Reports, dashboards and statements read only the local database.</p>
+    </li>
+  </ol>
+</section>
+
+<section aria-labelledby="features">
+  <h2 id="features">What you get</h2>
+  <div class="cards">
+    <div class="card">
+      <h3>Budgets and alerts</h3>
+      <p>Used share, expiry and projected exhaustion per allocation, with alerts for low
+        budget, expiry, lost visibility and stale data.</p>
+    </div>
+    <div class="card">
+      <h3>Lifetime project totals</h3>
+      <p>A project's use across every allocation it touched, stated as a lower bound with its
+        coverage.</p>
+    </div>
+    <div class="card">
+      <h3>Allocation ≠ project</h3>
+      <p>An allocation is who paid; a project is what science it was. Rules keep the two apart,
+        and <code>explain</code> shows why a job was attributed where it was.</p>
+    </div>
+    <div class="card">
+      <h3>Waste, separated from debugging</h3>
+      <p>Failures in production queues count as wasted compute; failures in debug and
+        interactive queues are shown apart, because they are expected.</p>
+    </div>
+    <div class="card">
+      <h3>Several members, one total</h3>
+      <p>Each member exports aggregated monthly rows with no job names or paths; importing them
+        rebuilds the project total that nobody can see alone.</p>
+    </div>
+    <div class="card">
+      <h3>Statements for papers</h3>
+      <p>A resource-usage paragraph and table for papers, reports and proposals, generated
+        from the same numbers as the dashboard.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="energy">
+  <h2 id="energy">Energy and carbon</h2>
+  <p class="section-sub">
+    Estimates follow the Green Algorithms approach (Lannelongue et al., 2021) and complement
+    in-job measurement tools such as CodeCarbon by covering every job, including ones that were
+    never instrumented.
+  </p>
+  <pre><code>IT energy       = measured energy (exclusive CPU-node jobs)
+                + other billed node-hours × modelled node power
+facility energy = IT energy × PUE
+CO₂e            = facility energy × grid carbon intensity of the month</code></pre>
+  <p class="callout">
+    MN5 measures energy only on CPU nodes, and only per whole node. GPU-node power is
+    modelled from GPU utilisation scenarios, so results come as a low–central–high range with
+    the measured share stated. Until every parameter has a source, outputs are marked as a
+    draft. The demo's figures use placeholder parameters.
+  </p>
+</section>
+
+<section aria-labelledby="units">
+  <h2 id="units">Counting what the budget pays</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Quantity</th><th>Definition</th></tr></thead>
+      <tbody>
+        <tr><td>Billed node-hours</td><td>Slurm billing × hours ÷ hardware threads per node
+          (160 on GPU nodes, 224 on CPU nodes). A 1-GPU job is billed a quarter node.</td></tr>
+        <tr><td>GPU-hours</td><td>Billed GPU-node hours × 4 (H100)</td></tr>
+        <tr><td>Node-hours</td><td>Elapsed time × nodes: what was occupied</td></tr>
+        <tr><td>BSC khours</td><td>Thousand physical-core-hours; GPU-node hours = khours × 1000
+          ÷ 80. Agrees with Slurm billing to about 0.1 %.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="start">
+  <h2 id="start">Get started</h2>
+  <p class="section-sub">Needs <a href="https://docs.astral.sh/uv/">uv</a>, Python 3.12 or
+    later, and ssh access to an MN5 login node.</p>
+  <pre><code>git clone https://github.com/amozaffari/energy4mn5_public &amp;&amp; cd energy4mn5_public
+uv sync
+cp config/tracker.example.yaml config/tracker.yaml   # your username and ssh hosts
+uv run mn5track sync --full                          # first full history
+uv run mn5track status                               # budgets, expiry, alerts
+uv run mn5track dashboard --project &lt;name&gt;           # this page's dashboards
+uv run mn5track schedule install                     # daily snapshot on macOS</code></pre>
+</section>
+
+<footer>
+  <p>mn5-compute-tracker is not an official BSC or EuroHPC service. The demo dashboards show real usage with names replaced by aliases; their
+    energy and carbon figures are drafts based on unverified parameters.</p>
+</footer>
+
+</main>
+</body>
+</html>

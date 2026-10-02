@@ -1,0 +1,65 @@
+Set INTEL compilers as MPI wrappers backend
+load impi/2021.10.0 (PATH, MANPATH, LD_LIBRARY_PATH)
+load mkl/2023.2.0 (LD_LIBRARY_PATH)
+load UCX/1.15.0 (PATH, LD_LIBRARY_PATH, LIBRARY_PATH, C_INCLUDE_PATH,
+CPLUS_INCLUDE_PATH) 
+load bsc/1.0 (PATH, MANPATH)
+__BEGIN__
+
+[1m[38;5;117m Printing quota for group bsc32:[22m[0m
+
+[1;30m[47m    Filesystem   Type          Usage          Quota          Limit     In doubt     Grace  |       Files  In doubt  [0m
+[38;5;252m[48;5;235m     gpfs_home    USR       63.19 GB       80.00 GB       84.00 GB[38;5;252m      0.00 KB      None  |      546479         0  [0m
+[38;5;252m[48;5;235m gpfs_projects    GRP      326.69 TB      384.27 TB      403.48 TB[38;5;252m      1.86 GB      None  |   120024850       237  [0m
+[38;5;252m[48;5;237m  gpfs_scratch    GRP[1m[38;5;196m      488.31 TB      488.28 TB      512.70 TB[38;5;252m      1.31 TB  7.0 days  |   336909111     94503  [0m
+[38;5;252m[48;5;235m  Archive quota info not currently available[0m
+
+ For information regarding /gpfs/tapes, run this command from a Storage 5 node (transfer[1..4].bsc.es).
+
+
+[1m[38;5;117m Printing quota for group ehpc101:[22m[0m
+
+[1;30m[47m    Filesystem   Type          Usage          Quota          Limit     In doubt     Grace  |       Files  In doubt  [0m
+[38;5;252m[48;5;235m     gpfs_home    USR       63.19 GB       80.00 GB       84.00 GB[38;5;252m      0.00 KB      None  |      546479         0  [0m
+[38;5;252m[48;5;235m gpfs_projects    GRP      850.66 GB     1000.00 GB        1.03 TB[38;5;252m      0.00 KB      None  |     5723091         0  [0m
+[38;5;252m[48;5;235m  gpfs_scratch    GRP        3.15 TB        4.88 TB        5.13 TB[38;5;252m      1.53 GB      None  |    10830071       190  [0m
+[38;5;252m[48;5;235m  Archive quota info not currently available[0m
+
+ For information regarding /gpfs/tapes, run this command from a Storage 5 node (transfer[1..4].bsc.es).
+
+
+[1m[38;5;117m Printing quota for group ehpc102:[22m[0m
+
+[1;30m[47m    Filesystem   Type          Usage          Quota          Limit     In doubt     Grace  |       Files  In doubt  [0m
+[38;5;252m[48;5;235m     gpfs_home    USR       63.19 GB       80.00 GB       84.00 GB[38;5;252m      0.00 KB      None  |      546479         0  [0m
+[38;5;252m[48;5;235m gpfs_projects    GRP      448.29 GB     1000.00 GB        1.03 TB[38;5;252m      0.00 KB      None  |      981800         0  [0m
+[38;5;252m[48;5;235m  gpfs_scratch    GRP        2.88 TB        4.88 TB        5.13 TB[38;5;252m      0.00 KB      None  |    26134722         0  [0m
+[38;5;252m[48;5;235m  Archive quota info not currently available[0m
+
+ For information regarding /gpfs/tapes, run this command from a Storage 5 node (transfer[1..4].bsc.es).
+
+
+[1m[38;5;117m Printing quota for group ehpc103:[22m[0m
+
+[1;30m[47m    Filesystem   Type          Usage          Quota          Limit     In doubt     Grace  |       Files  In doubt  [0m
+[38;5;252m[48;5;235m     gpfs_home    USR       63.19 GB       80.00 GB       84.00 GB[38;5;252m      0.00 KB      None  |      546479         0  [0m
+[38;5;252m[48;5;235m gpfs_projects    GRP       48.00 KB     1000.00 GB        1.03 TB[38;5;252m      0.00 KB      None  |          15         0  [0m
+[38;5;252m[48;5;235m  gpfs_scratch    GRP       14.82 TB       39.06 TB       41.02 TB[38;5;252m    640.00 MB      None  |      126170        76  [0m
+[38;5;252m[48;5;235m  Archive quota info not currently available[0m
+
+ For information regarding /gpfs/tapes, run this command from a Storage 5 node (transfer[1..4].bsc.es).
+
+
+[1m[38;5;117m Printing quota for group ehpc104:[22m[0m
+
+[1;30m[47m    Filesystem   Type          Usage          Quota          Limit     In doubt     Grace  |       Files  In doubt  [0m
+[38;5;252m[48;5;235m     gpfs_home    USR       63.19 GB       80.00 GB       84.00 GB[38;5;252m      0.00 KB      None  |      546479         0  [0m
+[38;5;252m[48;5;235m gpfs_projects    GRP       48.00 KB     1000.00 GB        1.03 TB[38;5;252m      0.00 KB      None  |          15         0  [0m
+[38;5;252m[48;5;235m  gpfs_scratch    GRP        0.00 KB        3.91 TB        4.10 TB[38;5;252m      0.00 KB      None  |           1         0  [0m
+[38;5;252m[48;5;235m  Archive quota info not currently available[0m
+
+ For information regarding /gpfs/tapes, run this command from a Storage 5 node (transfer[1..4].bsc.es).
+
+ For an in-depth explanation of the output, check the [38;5;117m[1m]8;;https://bsc.es/supportkc/docs/bsc_commands#bsc_quota\User's Guide]8;;\[0m[22m.
+
+__END__

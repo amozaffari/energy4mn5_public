@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MN5 Compute Usage</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f4f3f0;
+  --surface: #fcfcfb;
+  --border: #e4e3df;
+  --grid: #ebeae6;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100;
+  --series-5: #e87ba4; --series-6: #008300; --series-7: #4a3aa7; --series-8: #e34948;
+  --series-other: #9a9994;
+  --status-good: #0ca30c; --status-warning: #fab219; --status-critical: #d03b3b;
+  --status-neutral: #a8a7a1;
+  --meter-track: #dfe9f7;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #121211; --surface: #1a1a19; --border: #33332f; --grid: #2a2a27;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e87;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+    --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+    --series-other: #6f6e69; --status-neutral: #5d5c58; --meter-track: #1f3350;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #121211; --surface: #1a1a19; --border: #33332f; --grid: #2a2a27;
+  --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e87;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --series-4: #c98500;
+  --series-5: #d55181; --series-6: #008300; --series-7: #9085e9; --series-8: #e66767;
+  --series-other: #6f6e69; --status-neutral: #5d5c58; --meter-track: #1f3350;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--page); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+header h1 { font-size: 22px; margin: 0 0 4px; font-weight: 600; }
+.subtitle { color: var(--text-secondary); margin: 0; }
+.meta { color: var(--text-muted); font-size: 12px; margin-top: 4px; }
+.health { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; }
+.health li {
+  display: flex; gap: 6px; align-items: baseline; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 13px;
+}
+.badge { font-weight: 600; white-space: nowrap; }
+.badge.critical { color: var(--status-critical); }
+.badge.warning { color: var(--text-primary); }
+.badge.warning::before { content: ""; display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--status-warning); margin-right: 5px; }
+.badge.ok { color: var(--status-good); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;
+  margin: 20px 0; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px 16px; }
+.tile .label { color: var(--text-secondary); font-size: 13px; }
+.tile .value { font-size: 26px; font-weight: 600; margin-top: 2px; }
+.tile .hint { color: var(--text-muted); font-size: 12px; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 900px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.card .card-sub { color: var(--text-secondary); font-size: 12px; margin: 2px 0 10px; }
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  flex-wrap: wrap; }
+.toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px;
+  overflow: hidden; }
+.toggle button { background: none; border: 0; color: var(--text-secondary); padding: 4px 10px;
+  font: inherit; font-size: 12px; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--grid); color: var(--text-primary);
+  font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0 4px; font-size: 12px;
+  color: var(--text-secondary); padding: 0; list-style: none; }
+.legend li { display: flex; align-items: center; gap: 6px; }
+.legend .key { width: 10px; height: 10px; border-radius: 2px; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart text { fill: var(--text-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .value-label { fill: var(--text-secondary); }
+.mark { cursor: default; }
+.mark:hover, .mark:focus { filter: brightness(1.12); outline: none; }
+.panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.panel h3 { font-size: 14px; margin: 0; font-weight: 600; }
+.panel .panel-sub { color: var(--text-secondary); font-size: 12px; margin: 2px 0 8px; }
+.meter { height: 6px; border-radius: 3px; background: var(--meter-track); overflow: hidden;
+  margin: 6px 0 8px; }
+.meter span { display: block; height: 100%; background: var(--series-1); border-radius: 3px; }
+details { margin-top: 8px; font-size: 12px; }
+summary { color: var(--text-secondary); cursor: pointer; }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { padding: 3px 10px; border-bottom: 1px solid var(--border); text-align: right;
+  white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--text-secondary); font-weight: 600; }
+.notes { color: var(--text-muted); font-size: 12px; margin-top: 20px; }
+.notes p { margin: 2px 0; }
+#tooltip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.14); min-width: 150px; display: none; }
+#tooltip .tt-title { color: var(--text-secondary); margin-bottom: 4px; }
+#tooltip .tt-row { display: flex; align-items: center; gap: 8px; }
+#tooltip .tt-key { width: 12px; height: 2px; border-radius: 1px; flex: none; }
+#tooltip .tt-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+#tooltip .tt-name { color: var(--text-secondary); }
+.empty { color: var(--text-muted); font-size: 13px; padding: 16px 0; }
+.sub-title { font-size: 14px; margin: 0; font-weight: 600; }
+.split { display: flex; height: 14px; border-radius: 4px; overflow: hidden; gap: 2px;
+  background: var(--surface); margin: 10px 0 6px; }
+.split span { display: block; height: 100%; }
+#assumptions-table th, #assumptions-table td { white-space: normal; text-align: left; }
+@media (max-width: 640px) {
+  #assumptions-table tr:first-child { display: none; }
+  #assumptions-table table, #assumptions-table tr, #assumptions-table td { display: block; width: 100%; }
+  #assumptions-table tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+  #assumptions-table td { border: 0; padding: 1px 0; }
+  #assumptions-table td:first-child { color: var(--text-secondary); }
+  #assumptions-table td:last-child { color: var(--text-muted); }
+}
+#assumptions-table td:nth-child(2) { white-space: nowrap; font-weight: 600; }
+code { font-size: 12px; }
+.draft { display: inline-block; margin-left: 8px; font-size: 11px; font-weight: 600;
+  color: var(--text-primary); border: 1px solid var(--status-warning); border-radius: 6px;
+  padding: 1px 6px; vertical-align: middle; }
+.draft::before { content: "! "; color: var(--status-warning); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title">MN5 compute usage</h1>
+    <p class="subtitle" id="scope"></p>
+    <p class="meta" id="meta"></p>
+    <ul class="health" id="health"></ul>
+  </header>
+
+  <section class="tiles" id="tiles" aria-label="Headline figures"></section>
+
+  <section class="card" aria-labelledby="monthly-title">
+    <div class="card-head">
+      <div>
+        <h2 id="monthly-title">Usage over time</h2>
+        <p class="card-sub">Billed node-hours per month</p>
+      </div>
+      <div class="toggle" id="monthly-toggle" role="group" aria-label="Group by"></div>
+    </div>
+    <ul class="legend" id="monthly-legend"></ul>
+    <div class="chart" id="monthly-chart"></div>
+    <details><summary>Show table</summary><div class="table-wrap" id="monthly-table"></div></details>
+  </section>
+
+  <div class="grid two" style="margin-top:16px">
+    <section class="card" aria-labelledby="share-title">
+      <h2 id="share-title">Share</h2>
+      <p class="card-sub" id="share-sub">Billed node-hours, lifetime</p>
+      <div class="chart" id="share-chart"></div>
+      <details><summary>Show table</summary><div class="table-wrap" id="share-table"></div></details>
+    </section>
+    <section class="card" aria-labelledby="outcome-title">
+      <h2 id="outcome-title">Outcomes</h2>
+      <p class="card-sub">Billed node-hours per month by final job state; failures in debug/interactive queues are shown apart, as expected</p>
+      <ul class="legend" id="outcome-legend"></ul>
+      <div class="chart" id="outcome-chart"></div>
+      <details><summary>Show table</summary><div class="table-wrap" id="outcome-table"></div></details>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:16px" aria-labelledby="carbon-title">
+    <h2 id="carbon-title">Energy &amp; carbon footprint<span class="draft" id="carbon-draft" hidden>Draft: parameters not verified</span></h2>
+    <p class="card-sub" id="carbon-sub">kg CO₂e per month (central estimate), location-based</p>
+    <ul class="legend" id="carbon-legend"></ul>
+    <div class="chart" id="carbon-chart"></div>
+    <details><summary>Show table</summary><div class="table-wrap" id="carbon-table"></div></details>
+
+    <div class="grid two" style="margin-top:20px">
+      <div>
+        <h3 class="sub-title" id="carbon-group-title">Carbon by project</h3>
+        <p class="card-sub">t CO₂e, central estimate; hover for the low–high range</p>
+        <div class="chart" id="carbon-group-chart"></div>
+      </div>
+      <div>
+        <h3 class="sub-title">Measured vs modelled energy</h3>
+        <p class="card-sub" id="measured-sub"></p>
+        <div class="split" id="measured-split" role="img"></div>
+        <ul class="legend" id="measured-legend"></ul>
+        <p class="card-sub" id="measured-note"></p>
+        <h3 class="sub-title" style="margin-top:16px">Carbon by queue</h3>
+        <p class="card-sub">Production runs vs development (debug / interactive QOS). Other members' bsc_acct totals have no queue data and are shown as "not split".</p>
+        <div class="chart" id="carbon-queue-chart"></div>
+      </div>
+    </div>
+
+    <h3 class="sub-title" style="margin-top:20px">How the estimate is made</h3>
+    <p class="card-sub">Energy = measured IPMI energy (exclusive GPP jobs) + modelled node power × billed node-hours, × PUE. CO₂e = energy × grid intensity of the month. Edit these in <code>config/project.yaml</code> under <code>energy:</code>.</p>
+    <div class="table-wrap" id="assumptions-table"></div>
+  </section>
+
+  <section class="card" style="margin-top:16px" aria-labelledby="alloc-title">
+    <h2 id="alloc-title">Allocations</h2>
+    <p class="card-sub">Used vs budget (node-hours). Line: your jobs (sacct). Dots: all users (bsc_acct snapshots). Dashed: budget.</p>
+    <div class="panels" id="panels"></div>
+  </section>
+
+  <section class="notes" id="notes"></section>
+</main>
+<div id="tooltip" role="tooltip"></div>
+
+<script type="application/json" id="dashboard-data">{"schema": "mn5track.dashboard/v1", "generated_at": "2026-10-02T18:01:02+00:00", "today": "2026-10-02", "scope": {"kind": "own", "project": null, "title": "Anonymous user", "label": "Your own jobs across all projects and allocations (sacct)", "coverage": null, "anonymised": true}, "tiles": {"gpu_hours_billed": 55574.0, "acc_node_hours": 13894.0, "gpp_node_hours": 3563.0, "success_rate": 0.577, "production_success_rate": 0.655, "wasted_share": 0.045, "debug_failed_node_hours": 446.8, "debug_failed_jobs": 1295, "jobs": 5545, "active_allocations": 4}, "series": {"project": ["Project A", "Project B", "Project C", "Project D", "Project E", "unattributed"], "account": ["Allocation 1", "Allocation 2", "Allocation 3", "Allocation 4", "Allocation 5", "Allocation 6", "Allocation 7", "Allocation 8", "Allocation 9"], "partition": ["acc", "gpp"], "queue": ["production", "development"]}, "group_keys": ["project", "account", "queue"], "monthly": {"project": [{"month": "2024-04", "values": {"Project B": 0.0}}, {"month": "2024-05", "values": {"Project B": 122.13}}, {"month": "2024-06", "values": {"Project B": 32.36, "unattributed": 0.09}}, {"month": "2024-07", "values": {}}, {"month": "2024-08", "values": {"Project B": 815.01}}, {"month": "2024-09", "values": {"Project B": 1677.48}}, {"month": "2024-10", "values": {"Project B": 946.53}}, {"month": "2024-11", "values": {"Project B": 221.91}}, {"month": "2024-12", "values": {"Project B": 1747.54}}, {"month": "2025-01", "values": {"Project B": 33.26}}, {"month": "2025-02", "values": {"Project B": 1490.6}}, {"month": "2025-03", "values": {"Project B": 986.54, "Project A": 0.37}}, {"month": "2025-04", "values": {"Project B": 4.64, "Project A": 22.45}}, {"month": "2025-05", "values": {"Project A": 67.16, "Project B": 0.66}}, {"month": "2025-06", "values": {"Project A": 85.26}}, {"month": "2025-07", "values": {"Project A": 105.27}}, {"month": "2025-08", "values": {"Project A": 7.76}}, {"month": "2025-09", "values": {"Project A": 273.19}}, {"month": "2025-10", "values": {"Project A": 105.33, "unattributed": 0.33}}, {"month": "2025-11", "values": {"Project A": 111.31}}, {"month": "2025-12", "values": {"Project A": 3476.45, "Project E": 0.29}}, {"month": "2026-01", "values": {"Project A": 1547.4, "Project E": 0.73, "unattributed": 0.37}}, {"month": "2026-02", "values": {"Project A": 212.82}}, {"month": "2026-03", "values": {"Project A": 0.02, "Project E": 0.28}}, {"month": "2026-04", "values": {"Project E": 0.13, "Project C": 60.2, "Project A": 41.62}}, {"month": "2026-05", "values": {"Project A": 503.94, "Project E": 0.75}}, {"month": "2026-06", "values": {"Project A": 1097.69}}, {"month": "2026-07", "values": {"Project A": 976.58, "Project D": 122.86, "Project E": 0.78}}, {"month": "2026-08", "values": {"Project A": 423.17, "Project D": 44.86, "Project E": 0.37}}, {"month": "2026-09", "values": {"Project D": 32.57, "Project A": 54.91, "Project E": 0.59}}], "account": [{"month": "2024-04", "values": {"Allocation 1": 0.0}}, {"month": "2024-05", "values": {"Allocation 1": 122.13}}, {"month": "2024-06", "values": {"Allocation 1": 32.46}}, {"month": "2024-07", "values": {}}, {"month": "2024-08", "values": {"Allocation 1": 815.01}}, {"month": "2024-09", "values": {"Allocation 1": 1677.48}}, {"month": "2024-10", "values": {"Allocation 1": 946.53}}, {"month": "2024-11", "values": {"Allocation 1": 221.91}}, {"month": "2024-12", "values": {"Allocation 1": 1747.54}}, {"month": "2025-01", "values": {"Allocation 1": 33.26}}, {"month": "2025-02", "values": {"Allocation 1": 1490.6}}, {"month": "2025-03", "values": {"Allocation 1": 986.91}}, {"month": "2025-04", "values": {"Allocation 1": 27.09}}, {"month": "2025-05", "values": {"Allocation 1": 67.82}}, {"month": "2025-06", "values": {"Allocation 1": 64.23, "Allocation 2": 21.03}}, {"month": "2025-07", "values": {"Allocation 1": 101.67, "Allocation 2": 3.6}}, {"month": "2025-08", "values": {"Allocation 1": 6.67, "Allocation 2": 1.08}}, {"month": "2025-09", "values": {"Allocation 1": 219.03, "Allocation 2": 16.73, "Allocation 3": 37.43}}, {"month": "2025-10", "values": {"Allocation 1": 50.76, "Allocation 3": 39.47, "Allocation 2": 15.43}}, {"month": "2025-11", "values": {"Allocation 3": 65.91, "Allocation 1": 45.4}}, {"month": "2025-12", "values": {"Allocation 1": 11.91, "Allocation 3": 3464.82}}, {"month": "2026-01", "values": {"Allocation 3": 1492.74, "Allocation 1": 0.62, "Allocation 2": 55.14}}, {"month": "2026-02", "values": {"Allocation 3": 212.0, "Allocation 1": 0.82}}, {"month": "2026-03", "values": {"Allocation 2": 0.02, "Allocation 4": 0.28}}, {"month": "2026-04", "values": {"Allocation 4": 0.13, "Allocation 5": 69.78, "Allocation 1": 32.04}}, {"month": "2026-05", "values": {"Allocation 5": 504.53, "Allocation 4": 0.01, "Allocation 9": 0.03, "Allocation 1": 0.12}}, {"month": "2026-06", "values": {"Allocation 5": 37.39, "Allocation 6": 169.91, "Allocation 1": 0.41, "Allocation 7": 889.97}}, {"month": "2026-07", "values": {"Allocation 7": 1099.87, "Allocation 1": 0.35}}, {"month": "2026-08", "values": {"Allocation 7": 468.41}}, {"month": "2026-09", "values": {"Allocation 7": 87.64, "Allocation 1": 0.43}}], "queue": [{"month": "2024-04", "values": {"development": 0.0}}, {"month": "2024-05", "values": {"development": 1.29, "production": 120.84}}, {"month": "2024-06", "values": {"production": 17.35, "development": 15.11}}, {"month": "2024-07", "values": {}}, {"month": "2024-08", "values": {"development": 101.25, "production": 713.76}}, {"month": "2024-09", "values": {"development": 92.06, "production": 1585.42}}, {"month": "2024-10", "values": {"development": 149.08, "production": 797.45}}, {"month": "2024-11", "values": {"production": 56.68, "development": 165.23}}, {"month": "2024-12", "values": {"development": 291.96, "production": 1455.58}}, {"month": "2025-01", "values": {"production": 26.68, "development": 6.58}}, {"month": "2025-02", "values": {"production": 1089.75, "development": 400.85}}, {"month": "2025-03", "values": {"production": 812.45, "development": 174.45}}, {"month": "2025-04", "values": {"development": 24.41, "production": 2.68}}, {"month": "2025-05", "values": {"development": 17.84, "production": 49.98}}, {"month": "2025-06", "values": {"development": 71.01, "production": 14.25}}, {"month": "2025-07", "values": {"development": 29.08, "production": 76.19}}, {"month": "2025-08", "values": {"development": 7.67, "production": 0.09}}, {"month": "2025-09", "values": {"development": 46.56, "production": 226.64}}, {"month": "2025-10", "values": {"development": 50.38, "production": 55.28}}, {"month": "2025-11", "values": {"development": 18.21, "production": 93.09}}, {"month": "2025-12", "values": {"production": 3463.54, "development": 13.19}}, {"month": "2026-01", "values": {"production": 1534.01, "development": 14.49}}, {"month": "2026-02", "values": {"development": 17.52, "production": 195.3}}, {"month": "2026-03", "values": {"development": 0.3}}, {"month": "2026-04", "values": {"development": 35.52, "production": 66.44}}, {"month": "2026-05", "values": {"production": 499.54, "development": 5.15}}, {"month": "2026-06", "values": {"production": 1094.89, "development": 2.8}}, {"month": "2026-07", "values": {"production": 1088.73, "development": 11.49}}, {"month": "2026-08", "values": {"production": 466.65, "development": 1.76}}, {"month": "2026-09", "values": {"development": 6.02, "production": 82.05}}]}, "share": {"kind": "project", "rows": [{"name": "Project A", "value": 9112.7}, {"name": "Project B", "value": 8078.7}, {"name": "Project D", "value": 200.3}, {"name": "Project C", "value": 60.2}, {"name": "Project E", "value": 3.9}, {"name": "unattributed", "value": 0.8}]}, "outcomes": {"monthly": [{"month": "2024-04", "values": {"completed": 0.0, "timeout": 0.0, "wasted": 0.0, "debug_failed": 0.0, "active": 0.0}}, {"month": "2024-05", "values": {"completed": 10.2, "timeout": 102.6, "wasted": 9.08, "debug_failed": 0.26, "active": 0.0}}, {"month": "2024-06", "values": {"completed": 21.57, "timeout": 6.52, "wasted": 1.53, "debug_failed": 2.83, "active": 0.0}}, {"month": "2024-07", "values": {"completed": 0.0, "timeout": 0.0, "wasted": 0.0, "debug_failed": 0.0, "active": 0.0}}, {"month": "2024-08", "values": {"completed": 564.77, "timeout": 224.1, "wasted": 4.44, "debug_failed": 21.7, "active": 0.0}}, {"month": "2024-09", "values": {"completed": 771.69, "timeout": 514.4, "wasted": 327.11, "debug_failed": 64.28, "active": 0.0}}, {"month": "2024-10", "values": {"completed": 173.47, "timeout": 617.64, "wasted": 132.86, "debug_failed": 22.56, "active": 0.0}}, {"month": "2024-11", "values": {"completed": 83.64, "timeout": 39.36, "wasted": 0.63, "debug_failed": 98.28, "active": 0.0}}, {"month": "2024-12", "values": {"completed": 1303.98, "timeout": 303.45, "wasted": 25.77, "debug_failed": 114.34, "active": 0.0}}, {"month": "2025-01", "values": {"completed": 17.37, "timeout": 14.69, "wasted": 1.09, "debug_failed": 0.1, "active": 0.0}}, {"month": "2025-02", "values": {"completed": 980.54, "timeout": 476.29, "wasted": 6.01, "debug_failed": 27.76, "active": 0.0}}, {"month": "2025-03", "values": {"completed": 829.42, "timeout": 151.64, "wasted": 0.21, "debug_failed": 5.64, "active": 0.0}}, {"month": "2025-04", "values": {"completed": 22.06, "timeout": 0.3, "wasted": 0.0, "debug_failed": 4.73, "active": 0.0}}, {"month": "2025-05", "values": {"completed": 61.99, "timeout": 1.5, "wasted": 0.6, "debug_failed": 3.73, "active": 0.0}}, {"month": "2025-06", "values": {"completed": 53.8, "timeout": 13.73, "wasted": 4.84, "debug_failed": 12.9, "active": 0.0}}, {"month": "2025-07", "values": {"completed": 73.67, "timeout": 1.01, "wasted": 11.38, "debug_failed": 19.21, "active": 0.0}}, {"month": "2025-08", "values": {"completed": 4.52, "timeout": 2.0, "wasted": 0.0, "debug_failed": 1.23, "active": 0.0}}, {"month": "2025-09", "values": {"completed": 139.86, "timeout": 112.13, "wasted": 12.86, "debug_failed": 8.35, "active": 0.0}}, {"month": "2025-10", "values": {"completed": 70.97, "timeout": 12.93, "wasted": 3.94, "debug_failed": 17.83, "active": 0.0}}, {"month": "2025-11", "values": {"completed": 66.63, "timeout": 36.35, "wasted": 3.07, "debug_failed": 5.26, "active": 0.0}}, {"month": "2025-12", "values": {"completed": 95.17, "timeout": 3316.4, "wasted": 61.34, "debug_failed": 3.82, "active": 0.0}}, {"month": "2026-01", "values": {"completed": 113.56, "timeout": 1378.59, "wasted": 54.59, "debug_failed": 1.75, "active": 0.0}}, {"month": "2026-02", "values": {"completed": 30.82, "timeout": 180.04, "wasted": 0.0, "debug_failed": 1.95, "active": 0.0}}, {"month": "2026-03", "values": {"completed": 0.2, "timeout": 0.0, "wasted": 0.0, "debug_failed": 0.1, "active": 0.0}}, {"month": "2026-04", "values": {"completed": 20.81, "timeout": 66.98, "wasted": 8.95, "debug_failed": 5.21, "active": 0.0}}, {"month": "2026-05", "values": {"completed": 265.57, "timeout": 233.07, "wasted": 5.92, "debug_failed": 0.12, "active": 0.0}}, {"month": "2026-06", "values": {"completed": 518.43, "timeout": 576.08, "wasted": 2.81, "debug_failed": 0.36, "active": 0.0}}, {"month": "2026-07", "values": {"completed": 663.61, "timeout": 412.1, "wasted": 24.06, "debug_failed": 0.45, "active": 0.0}}, {"month": "2026-08", "values": {"completed": 441.83, "timeout": 24.0, "wasted": 2.34, "debug_failed": 0.23, "active": 0.0}}, {"month": "2026-09", "values": {"completed": 85.72, "timeout": 0.5, "wasted": 0.0, "debug_failed": 1.85, "active": 0.0}}], "totals": {"completed": {"jobs": 3198, "billed_node_hours": 7485.868157738107}, "timeout": {"jobs": 498, "billed_node_hours": 8818.410510912701}, "wasted": {"jobs": 554, "billed_node_hours": 705.4396775793651}, "debug_failed": {"jobs": 1295, "billed_node_hours": 446.8223432539682}, "active": {"jobs": 0, "billed_node_hours": 0.0}}}, "allocations": [{"account": "Allocation 4", "title": "ACC budget", "node_class": "acc", "budget_node_hours": 3500.0, "used_node_hours": 2771.0, "used_pct": 79.2, "expiration_date": "2027-02-20", "days_to_expiry": 141, "projected_exhaustion": null, "start": "2026-03-26", "own_series": [{"date": "2026-03-26", "value": 0.28}, {"date": "2026-04-12", "value": 0.41}, {"date": "2026-05-12", "value": 0.42}, {"date": "2026-05-13", "value": 0.42}], "snapshots": [{"date": "2026-09-29", "value": 2771.0}, {"date": "2026-10-01", "value": 2771.0}, {"date": "2026-10-01", "value": 2771.0}, {"date": "2026-10-02", "value": 2771.0}]}, {"account": "Allocation 6", "title": "ACC budget", "node_class": "acc", "budget_node_hours": 3500.0, "used_node_hours": 169.9, "used_pct": 4.9, "expiration_date": "2027-05-04", "days_to_expiry": 214, "projected_exhaustion": null, "start": "2026-06-04", "own_series": [{"date": "2026-06-04", "value": 0.5}, {"date": "2026-06-05", "value": 24.51}, {"date": "2026-06-07", "value": 25.13}, {"date": "2026-06-08", "value": 96.1}, {"date": "2026-06-09", "value": 150.97}, {"date": "2026-06-10", "value": 162.97}, {"date": "2026-06-11", "value": 169.91}], "snapshots": [{"date": "2026-09-29", "value": 169.88}, {"date": "2026-10-01", "value": 169.88}, {"date": "2026-10-01", "value": 169.88}, {"date": "2026-10-02", "value": 169.88}]}, {"account": "Allocation 7", "title": "ACC budget", "node_class": "acc", "budget_node_hours": 72000.0, "used_node_hours": 3829.5, "used_pct": 5.3, "expiration_date": "2026-12-10", "days_to_expiry": 69, "projected_exhaustion": "2027-12-09", "start": "2026-06-10", "own_series": [{"date": "2026-06-10", "value": 9.6}, {"date": "2026-06-11", "value": 160.73}, {"date": "2026-06-12", "value": 203.64}, {"date": "2026-06-13", "value": 304.98}, {"date": "2026-06-15", "value": 322.73}, {"date": "2026-06-16", "value": 388.5}, {"date": "2026-06-17", "value": 390.07}, {"date": "2026-06-20", "value": 390.35}, {"date": "2026-06-25", "value": 391.08}, {"date": "2026-06-26", "value": 559.09}, {"date": "2026-06-27", "value": 583.09}, {"date": "2026-06-29", "value": 775.11}, {"date": "2026-06-30", "value": 817.95}, {"date": "2026-07-01", "value": 917.02}, {"date": "2026-07-02", "value": 951.68}, {"date": "2026-07-03", "value": 1258.14}, {"date": "2026-07-04", "value": 1282.88}, {"date": "2026-07-05", "value": 1290.13}, {"date": "2026-07-06", "value": 1294.23}, {"date": "2026-07-12", "value": 1294.89}, {"date": "2026-07-13", "value": 1305.34}, {"date": "2026-07-14", "value": 1348.81}, {"date": "2026-07-15", "value": 1479.46}, {"date": "2026-07-16", "value": 1498.37}, {"date": "2026-07-20", "value": 1502.24}, {"date": "2026-07-22", "value": 1678.25}, {"date": "2026-07-23", "value": 1695.35}, {"date": "2026-07-24", "value": 1706.67}, {"date": "2026-07-25", "value": 1730.68}, {"date": "2026-07-27", "value": 1731.91}, {"date": "2026-07-28", "value": 1731.94}, {"date": "2026-07-29", "value": 1756.0}, {"date": "2026-07-30", "value": 1849.73}, {"date": "2026-08-01", "value": 2130.32}, {"date": "2026-08-02", "value": 2413.01}, {"date": "2026-08-15", "value": 2413.23}, {"date": "2026-08-16", "value": 2437.24}, {"date": "2026-08-27", "value": 2437.61}, {"date": "2026-08-30", "value": 2443.11}, {"date": "2026-08-31", "value": 2458.25}, {"date": "2026-09-01", "value": 2492.11}, {"date": "2026-09-02", "value": 2492.66}, {"date": "2026-09-18", "value": 2492.75}, {"date": "2026-09-19", "value": 2492.83}, {"date": "2026-09-20", "value": 2494.72}, {"date": "2026-09-21", "value": 2494.74}, {"date": "2026-09-22", "value": 2495.14}, {"date": "2026-09-23", "value": 2495.18}, {"date": "2026-09-26", "value": 2495.37}, {"date": "2026-09-29", "value": 2503.15}, {"date": "2026-09-30", "value": 2545.89}], "snapshots": [{"date": "2026-09-29", "value": 3392.88}, {"date": "2026-10-01", "value": 3829.5}, {"date": "2026-10-01", "value": 3829.5}, {"date": "2026-10-02", "value": 3829.5}]}, {"account": "Allocation 8", "title": "ACC budget", "node_class": "acc", "budget_node_hours": 2000.0, "used_node_hours": 0.0, "used_pct": 0, "expiration_date": "2026-10-01", "days_to_expiry": -1, "projected_exhaustion": null, "start": null, "own_series": [], "snapshots": [{"date": "2026-09-29", "value": 0.0}, {"date": "2026-10-01", "value": 0.0}, {"date": "2026-10-01", "value": 0.0}, {"date": "2026-10-02", "value": 0.0}]}], "carbon": {"verified": false, "pue": 1.2, "grid_g_per_kwh": 150.0, "gpp_calibration": "655 W/node from 2,163 node-h of exclusive GPP jobs with IPMI energy", "facility_kwh": {"low": 31478.9, "central": 43149.5, "high": 54820.1}, "co2e_kg": {"low": 4721.8, "central": 6472.4, "high": 8223.0}, "measured_share": 0.12387995961068367, "measured_it_kwh": 1417.5, "modelled_it_kwh": {"low": 24814.9, "central": 34540.5, "high": 44266.0}, "by_group": [{"name": "Project A", "value": 3847.7, "low": 2746.0, "high": 4949.4, "facility_kwh": 25651.4}, {"name": "Project B", "value": 2509.2, "low": 1893.7, "high": 3124.7, "facility_kwh": 16728.1}, {"name": "Project D", "value": 87.2, "low": 62.0, "high": 112.5, "facility_kwh": 581.7}, {"name": "Project C", "value": 26.2, "low": 18.6, "high": 33.8, "facility_kwh": 174.8}, {"name": "Project E", "value": 1.7, "low": 1.2, "high": 2.2, "facility_kwh": 11.4}, {"name": "unattributed", "value": 0.3, "low": 0.2, "high": 0.4, "facility_kwh": 2.1}], "by_queue": [{"name": "production", "value": 5884.6, "low": 4290.2, "high": 7479.1, "facility_kwh": 39230.9}, {"name": "development", "value": 587.8, "low": 431.7, "high": 743.9, "facility_kwh": 3918.7}], "assumptions": [{"parameter": "PUE (data-centre overhead)", "value": "1.2", "source": "UNVERIFIED placeholder; ask BSC operations for MareNostrum 5's annual PUE"}, {"parameter": "ACC node power, W (low / central / high)", "value": "1720 / 2420 / 3120", "source": "4 × 700 W GPU × utilisation 0.4 / 0.65 / 0.9 + 600 W host. Assumption for ML training; replace with CodeCarbon measurements (phase 2)"}, {"parameter": "GPP node power, W", "value": "655", "source": "655 W/node from 2,163 node-h of exclusive GPP jobs with IPMI energy"}, {"parameter": "Grid intensity, g CO₂e/kWh (location-based)", "value": "150", "source": "UNVERIFIED placeholder; use Red Electrica (REE) or Electricity Maps values for Spain"}, {"parameter": "Market-based intensity, g CO₂e/kWh", "value": "not used", "source": "Set energy.grid.market_g_per_kwh if electricity is certified renewable"}, {"parameter": "Embodied carbon, kg CO₂e per node-hour", "value": "not used", "source": "Optional scope 3: set energy.embodied_kg_per_node_hour"}], "monthly": [{"month": "2024-04", "values": {"gpp": 0.0}, "range": [0.0, 0.0]}, {"month": "2024-05", "values": {"gpp": 13.82}, "range": [13.8, 13.8]}, {"month": "2024-06", "values": {"gpp": 3.1}, "range": [3.1, 3.1]}, {"month": "2024-07", "values": {}, "range": [0.0, 0.0]}, {"month": "2024-08", "values": {"acc": 348.6, "gpp": 1.28}, "range": [249.0, 450.7]}, {"month": "2024-09", "values": {"acc": 565.21, "gpp": 37.44}, "range": [439.2, 766.1]}, {"month": "2024-10", "values": {"acc": 272.99, "gpp": 35.65}, "range": [229.7, 387.6]}, {"month": "2024-11", "values": {"acc": 47.68, "gpp": 9.2}, "range": [43.1, 70.7]}, {"month": "2024-12", "values": {"acc": 139.47, "gpp": 117.27}, "range": [216.4, 297.1]}, {"month": "2025-01", "values": {"acc": 9.42, "gpp": 1.33}, "range": [8.0, 13.5]}, {"month": "2025-02", "values": {"acc": 378.43, "gpp": 147.08}, "range": [416.0, 635.0]}, {"month": "2025-03", "values": {"acc": 366.06, "gpp": 14.68}, "range": [274.9, 486.6]}, {"month": "2025-04", "values": {"acc": 7.63, "gpp": 0.93}, "range": [6.3, 10.8]}, {"month": "2025-05", "values": {"acc": 0.36, "gpp": 6.54}, "range": [6.8, 7.0]}, {"month": "2025-06", "values": {"acc": 24.27, "gpp": 3.31}, "range": [20.6, 34.6]}, {"month": "2025-07", "values": {"acc": 45.21, "gpp": 0.17}, "range": [32.3, 58.5]}, {"month": "2025-08", "values": {"acc": 0.47, "gpp": 0.74}, "range": [1.1, 1.3]}, {"month": "2025-09", "values": {"acc": 49.36, "gpp": 17.14}, "range": [52.2, 80.8]}, {"month": "2025-10", "values": {"acc": 39.08, "gpp": 1.68}, "range": [29.5, 52.1]}, {"month": "2025-11", "values": {"acc": 28.71, "gpp": 4.55}, "range": [25.0, 41.6]}, {"month": "2025-12", "values": {"acc": 1509.28, "gpp": 1.33}, "range": [1074.0, 1947.2]}, {"month": "2026-01", "values": {"acc": 674.26, "gpp": 0.07}, "range": [479.3, 869.4]}, {"month": "2026-02", "values": {"acc": 92.35, "gpp": 0.1}, "range": [65.7, 119.2]}, {"month": "2026-03", "values": {"acc": 0.13}, "range": [0.1, 0.2]}, {"month": "2026-04", "values": {"acc": 33.83, "gpp": 2.87}, "range": [26.9, 46.5]}, {"month": "2026-05", "values": {"acc": 219.79, "gpp": 0.01}, "range": [156.2, 283.4]}, {"month": "2026-06", "values": {"acc": 478.15}, "range": [339.8, 616.5]}, {"month": "2026-07", "values": {"acc": 479.1, "gpp": 0.04}, "range": [340.6, 617.7]}, {"month": "2026-08", "values": {"acc": 204.04}, "range": [145.0, 263.1]}, {"month": "2026-09", "values": {"acc": 38.18, "gpp": 0.05}, "range": [27.2, 49.3]}]}, "health": {"last_sync": "2026-10-02T05:00:08+00:00", "alerts": [{"severity": "warning", "kind": "expired", "message": "Allocation 8 Marenostrum5 ACC expired on 2026-10-01 but is still listed in bsc_acct"}]}, "notes": ["Billed node-hours: what the budget was charged (1-GPU ACC jobs count as a quarter node).", "GPU-hours = billed ACC node-hours × 4 (H100). Months use each job's start date.", "sacct shows only your own jobs.", "Anonymised: projects, allocations and people are replaced by aliases; hours are real."]}</script>
+<script>
+(() => {
+  const data = JSON.parse(document.getElementById("dashboard-data").textContent);
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const OUTCOME_COLORS = {
+    completed: "var(--status-good)", timeout: "var(--status-warning)",
+    wasted: "var(--status-critical)", debug_failed: "var(--status-neutral)", active: "var(--grid)",
+  };
+  const OUTCOME_LABELS = {
+    completed: "Completed", timeout: "Timeout", wasted: "Failed in production",
+    debug_failed: "Failed in debug (expected)", active: "Running / pending",
+  };
+  const tooltip = document.getElementById("tooltip");
+  let groupKey = data.group_keys[0];
+
+  const compact = (value) => {
+    if (value === null || value === undefined) return "–";
+    const abs = Math.abs(value);
+    if (abs >= 1e6) return (value / 1e6).toFixed(1) + "M";
+    if (abs >= 1e4) return Math.round(value / 1e3) + "K";
+    if (abs >= 1e3) return (value / 1e3).toFixed(1) + "K";
+    if (abs >= 10) return Math.round(value).toString();
+    return value.toFixed(1);
+  };
+  const full = (value) => (Math.abs(value) > 0 && Math.abs(value) < 10
+    ? value.toFixed(1)
+    : Math.round(value).toLocaleString("en-US"));
+  const mwh = (kwh) => (kwh >= 1000 ? (kwh / 1000).toFixed(1) + " MWh" : Math.round(kwh) + " kWh");
+  const tonnes = (kg) => (kg >= 1000 ? (kg / 1000).toFixed(1) + " t CO₂e" : Math.round(kg) + " kg CO₂e");
+  const pct = (value) => {
+    if (value === null || value === undefined) return "–";
+    if (value > 0 && value < 0.005) return "<1%";
+    return Math.round(value * 100) + "%";
+  };
+
+  function element(tag, attributes = {}, text) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function svgElement(tag, attributes = {}) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value);
+    return node;
+  }
+
+  function seriesColor(kind, name) {
+    const names = data.series[kind] || [];
+    const index = names.indexOf(name);
+    if (name === "unattributed" || index < 0 || index >= 8) return "var(--series-other)";
+    return `var(--series-${index + 1})`;
+  }
+
+  function showTooltip(event, title, rows) {
+    tooltip.replaceChildren(element("div", { class: "tt-title" }, title));
+    for (const row of rows) {
+      const line = element("div", { class: "tt-row" });
+      const key = element("span", { class: "tt-key" });
+      key.style.background = row.color;
+      line.append(key, element("span", { class: "tt-value" }, row.value), element("span", { class: "tt-name" }, row.name));
+      tooltip.append(line);
+    }
+    tooltip.style.display = "block";
+    const box = tooltip.getBoundingClientRect();
+    const x = event.clientX + 14 + box.width > window.innerWidth ? event.clientX - box.width - 14 : event.clientX + 14;
+    const y = Math.min(event.clientY + 14, window.innerHeight - box.height - 8);
+    tooltip.style.left = x + "px";
+    tooltip.style.top = y + "px";
+  }
+
+  function focusTooltip(target, title, rows) {
+    const box = target.getBoundingClientRect();
+    showTooltip({ clientX: box.right, clientY: box.top }, title, rows);
+  }
+
+  const hideTooltip = () => { tooltip.style.display = "none"; };
+
+  function niceMax(value) {
+    if (value <= 0) return 1;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
+    const step = [1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= value / 4) * magnitude;
+    return Math.ceil(value / step) * step;
+  }
+
+  // Bar with a 4px rounded data end and a square baseline end.
+  function barPath(x, y, width, height, roundTop) {
+    const radius = Math.min(4, width / 2, height);
+    if (!roundTop || radius <= 0) return `M${x},${y}h${width}v${height}h${-width}Z`;
+    return `M${x},${y + height}V${y + radius}Q${x},${y} ${x + radius},${y}H${x + width - radius}Q${x + width},${y} ${x + width},${y + radius}V${y + height}Z`;
+  }
+
+  function renderTable(container, headers, rows) {
+    const table = element("table");
+    const head = element("tr");
+    headers.forEach((header) => head.append(element("th", {}, header)));
+    table.append(head);
+    for (const row of rows) {
+      const line = element("tr");
+      row.forEach((cell) => line.append(element("td", {}, cell)));
+      table.append(line);
+    }
+    container.replaceChildren(table);
+  }
+
+  function renderLegend(container, items) {
+    container.replaceChildren(...items.map((item) => {
+      const entry = element("li");
+      const key = element("span", { class: "key" });
+      key.style.background = item.color;
+      entry.append(key, document.createTextNode(item.name));
+      return entry;
+    }));
+  }
+
+  function stackedBars(container, months, seriesNames, colorOf, labelOf, extraRows = () => []) {
+    const width = Math.max(container.clientWidth, 300);
+    const height = 240;
+    const margin = { top: 8, right: 8, bottom: 26, left: 44 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const totals = months.map((month) => seriesNames.reduce((sum, name) => sum + (month.values[name] || 0), 0));
+    const maxValue = niceMax(Math.max(...totals, 0));
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, height, role: "img" });
+    const plot = svgElement("g", { transform: `translate(${margin.left},${margin.top})` });
+    svg.append(plot);
+
+    for (let tick = 0; tick <= 4; tick++) {
+      const value = (maxValue / 4) * tick;
+      const y = plotHeight - (value / maxValue) * plotHeight;
+      plot.append(svgElement("line", { x1: 0, x2: plotWidth, y1: y, y2: y, stroke: "var(--grid)", "stroke-width": 1 }));
+      const label = svgElement("text", { x: -8, y: y + 4, "text-anchor": "end" });
+      label.textContent = compact(value);
+      plot.append(label);
+    }
+
+    const slot = plotWidth / Math.max(months.length, 1);
+    const barWidth = Math.max(Math.min(slot * 0.72, 38), 2);
+    const labelEvery = Math.ceil(months.length / Math.max(Math.floor(plotWidth / 56), 1));
+
+    months.forEach((month, index) => {
+      const x = index * slot + (slot - barWidth) / 2;
+      let base = plotHeight;
+      const present = seriesNames.filter((name) => (month.values[name] || 0) > 0);
+      const rows = present.map((name) => ({ name: labelOf(name), value: full(month.values[name]), color: colorOf(name) }));
+      rows.push({ name: "total", value: full(totals[index]), color: "transparent" }, ...extraRows(month));
+
+      present.forEach((name, position) => {
+        const segment = (month.values[name] / maxValue) * plotHeight;
+        const isTop = position === present.length - 1;
+        // 2px surface gap between stacked segments.
+        const drawn = Math.max(segment - (isTop ? 0 : 2), 0.5);
+        const path = svgElement("path", {
+          d: barPath(x, base - segment, barWidth, drawn, isTop),
+          class: "mark", tabindex: 0, style: `fill:${colorOf(name)}`,
+          "aria-label": `${month.month} ${labelOf(name)} ${full(month.values[name])}`,
+        });
+        path.addEventListener("pointermove", (event) => showTooltip(event, month.month, rows));
+        path.addEventListener("pointerleave", hideTooltip);
+        path.addEventListener("focus", () => focusTooltip(path, month.month, rows));
+        path.addEventListener("blur", hideTooltip);
+        plot.append(path);
+        base -= segment;
+      });
+
+      // Transparent hit area over the whole column, so thin segments are still reachable.
+      const hit = svgElement("rect", { x: index * slot, y: 0, width: slot, height: plotHeight, fill: "transparent" });
+      hit.addEventListener("pointermove", (event) => showTooltip(event, month.month, rows));
+      hit.addEventListener("pointerleave", hideTooltip);
+      plot.insertBefore(hit, plot.firstChild);
+
+      if (index % labelEvery === 0) {
+        const label = svgElement("text", { x: index * slot + slot / 2, y: plotHeight + 16, "text-anchor": "middle" });
+        label.textContent = month.month;
+        plot.append(label);
+      }
+    });
+
+    plot.append(svgElement("line", { x1: 0, x2: plotWidth, y1: plotHeight, y2: plotHeight, stroke: "var(--border)" }));
+    container.replaceChildren(svg);
+  }
+
+  function renderHeader() {
+    const scope = data.scope;
+    document.getElementById("title").textContent =
+      scope.kind === "project" ? `${scope.title} — MN5 compute usage` : "MN5 compute usage";
+    document.getElementById("scope").textContent = scope.label;
+    document.getElementById("meta").textContent =
+      `Generated ${data.generated_at.slice(0, 16).replace("T", " ")} UTC · last successful sync ${data.health.last_sync ? data.health.last_sync.slice(0, 16).replace("T", " ") + " UTC" : "never"}`;
+
+    const health = document.getElementById("health");
+    const alerts = data.health.alerts;
+    if (!alerts.length) {
+      const item = element("li");
+      item.append(element("span", { class: "badge ok" }, "✓ No alerts"));
+      health.replaceChildren(item);
+      return;
+    }
+    health.replaceChildren(...alerts.map((alert) => {
+      const item = element("li");
+      const label = alert.severity === "critical" ? "▲ Critical" : "Warning";
+      item.append(element("span", { class: `badge ${alert.severity}` }, label), document.createTextNode(alert.message));
+      return item;
+    }));
+  }
+
+  function renderTiles() {
+    const tiles = data.tiles;
+    const coverage = data.scope.coverage;
+    const items = [
+      ["GPU-hours (billed)", compact(tiles.gpu_hours_billed), data.scope.kind === "project" ? "H100, lower bound" : "H100, your jobs"],
+      ["ACC node-hours", compact(tiles.acc_node_hours), "billed"],
+      ["GPP node-hours", compact(tiles.gpp_node_hours), "billed"],
+      ["Success rate", pct(tiles.production_success_rate), `production queues · ${pct(tiles.success_rate)} incl. debug`],
+      ["Wasted compute", pct(tiles.wasted_share), `production only · +${compact(tiles.debug_failed_node_hours)} node-h failed in debug`],
+      coverage
+        ? ["Members with detail", String(coverage.members_with_detail), `+ bsc_acct totals for up to ${coverage.members_from_bsc_acct_only}`]
+        : ["Active allocations", String(tiles.active_allocations), "with a budget, visible now"],
+      ["Energy", mwh(data.carbon.facility_kwh.central), `range ${mwh(data.carbon.facility_kwh.low)}–${mwh(data.carbon.facility_kwh.high)} · PUE ${data.carbon.pue}`],
+      ["Carbon footprint", tonnes(data.carbon.co2e_kg.central), `range ${tonnes(data.carbon.co2e_kg.low)}–${tonnes(data.carbon.co2e_kg.high)}${data.carbon.verified ? "" : " · draft"}`],
+    ];
+    document.getElementById("tiles").replaceChildren(...items.map(([label, value, hint]) => {
+      const tile = element("div", { class: "tile" });
+      tile.append(element("div", { class: "label" }, label), element("div", { class: "value" }, value), element("div", { class: "hint" }, hint));
+      return tile;
+    }));
+  }
+
+  function renderMonthly() {
+    const toggle = document.getElementById("monthly-toggle");
+    const labels = { project: "Project", account: "Allocation", queue: "Queue" };
+    toggle.replaceChildren(...data.group_keys.map((key) => {
+      const button = element("button", { type: "button", "aria-pressed": String(key === groupKey) }, labels[key]);
+      button.addEventListener("click", () => { groupKey = key; renderMonthly(); });
+      return button;
+    }));
+    toggle.style.display = data.group_keys.length > 1 ? "" : "none";
+
+    const months = data.monthly[groupKey];
+    const names = data.series[groupKey];
+    const container = document.getElementById("monthly-chart");
+    if (!months.length) { container.replaceChildren(element("p", { class: "empty" }, "No usage yet.")); return; }
+
+    const colorOf = (name) => seriesColor(groupKey, name);
+    renderLegend(document.getElementById("monthly-legend"), names.map((name) => ({ name, color: colorOf(name) })));
+    stackedBars(container, months, names, colorOf, (name) => name);
+    renderTable(
+      document.getElementById("monthly-table"),
+      ["Month", ...names, "Total"],
+      months.map((month) => [
+        month.month,
+        ...names.map((name) => full(month.values[name] || 0)),
+        full(names.reduce((sum, name) => sum + (month.values[name] || 0), 0)),
+      ]),
+    );
+  }
+
+  function renderShare() {
+    const share = data.share;
+    const kind = share.kind;
+    document.getElementById("share-title").textContent = kind === "project" ? "Share by project" : "Share by allocation";
+    const container = document.getElementById("share-chart");
+    const rows = share.rows;
+    if (!rows.length) { container.replaceChildren(element("p", { class: "empty" }, "No usage yet.")); return; }
+
+    const totalValue = rows.reduce((sum, row) => sum + row.value, 0);
+    const width = Math.max(container.clientWidth, 280);
+    const rowHeight = 26;
+    const labelWidth = 118;
+    const valueWidth = 88;
+    const height = rows.length * rowHeight + 4;
+    const maxValue = Math.max(...rows.map((row) => row.value));
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, height, role: "img" });
+
+    rows.forEach((row, index) => {
+      const y = index * rowHeight + 4;
+      const barLength = Math.max(((width - labelWidth - valueWidth) * row.value) / maxValue, 2);
+      const color = seriesColor(kind, row.name);
+      const name = svgElement("text", { x: 0, y: y + 13 });
+      name.textContent = row.name;
+      const path = svgElement("path", {
+        d: `M${labelWidth},${y}h${barLength - 4}q4,0 4,4v10q0,4 -4,4h${-(barLength - 4)}Z`,
+        class: "mark", tabindex: 0, style: `fill:${color}`, "aria-label": `${row.name} ${full(row.value)}`,
+      });
+      const tooltipRows = [{ name: `${pct(row.value / totalValue)} of total`, value: `${full(row.value)} node-h`, color }];
+      path.addEventListener("pointermove", (event) => showTooltip(event, row.name, tooltipRows));
+      path.addEventListener("pointerleave", hideTooltip);
+      path.addEventListener("focus", () => focusTooltip(path, row.name, tooltipRows));
+      path.addEventListener("blur", hideTooltip);
+      const value = svgElement("text", { x: labelWidth + barLength + 6, y: y + 13, class: "value-label" });
+      value.textContent = `${compact(row.value)} · ${pct(row.value / totalValue)}`;
+      svg.append(name, path, value);
+    });
+
+    container.replaceChildren(svg);
+    renderTable(document.getElementById("share-table"), [kind === "project" ? "Project" : "Allocation", "Billed node-h", "Share"],
+      rows.map((row) => [row.name, full(row.value), pct(row.value / totalValue)]));
+  }
+
+  function renderOutcomes() {
+    const outcomes = ["completed", "timeout", "wasted", "debug_failed", "active"];
+    const totals = data.outcomes.totals;
+    renderLegend(document.getElementById("outcome-legend"), outcomes
+      .filter((name) => totals[name].jobs > 0)
+      .map((name) => ({ name: `${OUTCOME_LABELS[name]} · ${compact(totals[name].billed_node_hours)}`, color: OUTCOME_COLORS[name] })));
+    const container = document.getElementById("outcome-chart");
+    const months = data.outcomes.monthly;
+    if (!months.length) { container.replaceChildren(element("p", { class: "empty" }, "No usage yet.")); return; }
+
+    stackedBars(container, months, outcomes, (name) => OUTCOME_COLORS[name], (name) => OUTCOME_LABELS[name]);
+    renderTable(document.getElementById("outcome-table"), ["Month", ...outcomes.map((name) => OUTCOME_LABELS[name])],
+      months.map((month) => [month.month, ...outcomes.map((name) => full(month.values[name] || 0))]));
+  }
+
+  function renderCarbon() {
+    const carbon = data.carbon;
+    const names = data.series.partition;
+    const labels = { acc: "ACC (GPU)", gpp: "GPP (CPU)" };
+    const labelOf = (name) => labels[name] || name;
+    const colorOf = (name) => seriesColor("partition", name);
+    document.getElementById("carbon-draft").hidden = carbon.verified;
+    document.getElementById("carbon-sub").textContent =
+      `kg CO₂e per month (central estimate), location-based at ${carbon.grid_g_per_kwh} g/kWh, PUE ${carbon.pue}; ` +
+      `energy measured for ${pct(carbon.measured_share)} of billed node-hours, modelled for the rest`;
+    const container = document.getElementById("carbon-chart");
+    if (!carbon.monthly.length) { container.replaceChildren(element("p", { class: "empty" }, "No usage yet.")); return; }
+
+    renderLegend(document.getElementById("carbon-legend"), names.map((name) => ({ name: labelOf(name), color: colorOf(name) })));
+    stackedBars(container, carbon.monthly, names, colorOf, labelOf, (month) => [
+      { name: "range (low–high)", value: `${full(month.range[0])}–${full(month.range[1])}`, color: "transparent" },
+    ]);
+    renderTable(document.getElementById("carbon-table"), ["Month", ...names.map(labelOf), "Low", "High"],
+      carbon.monthly.map((month) => [month.month, ...names.map((name) => full(month.values[name] || 0)),
+        full(month.range[0]), full(month.range[1])]));
+  }
+
+  function horizontalBars(container, rows, colorOf, labelFor, tooltipFor) {
+    const width = Math.max(container.clientWidth, 260);
+    const rowHeight = 26;
+    const labelWidth = 118;
+    const valueWidth = 96;
+    const height = rows.length * rowHeight + 4;
+    const maxValue = Math.max(...rows.map((row) => row.value), 1e-9);
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, height, role: "img" });
+
+    rows.forEach((row, index) => {
+      const y = index * rowHeight + 4;
+      const barLength = Math.max(((width - labelWidth - valueWidth) * row.value) / maxValue, 2);
+      const color = colorOf(row.name);
+      const name = svgElement("text", { x: 0, y: y + 13 });
+      name.textContent = row.name;
+      const path = svgElement("path", {
+        d: `M${labelWidth},${y}h${Math.max(barLength - 4, 0)}q4,0 4,4v10q0,4 -4,4h${-Math.max(barLength - 4, 0)}Z`,
+        class: "mark", tabindex: 0, style: `fill:${color}`, "aria-label": `${row.name} ${labelFor(row)}`,
+      });
+      const rowsForTooltip = tooltipFor(row, color);
+      path.addEventListener("pointermove", (event) => showTooltip(event, row.name, rowsForTooltip));
+      path.addEventListener("pointerleave", hideTooltip);
+      path.addEventListener("focus", () => focusTooltip(path, row.name, rowsForTooltip));
+      path.addEventListener("blur", hideTooltip);
+      const value = svgElement("text", { x: labelWidth + barLength + 6, y: y + 13, class: "value-label" });
+      value.textContent = labelFor(row);
+      svg.append(name, path, value);
+    });
+
+    container.replaceChildren(svg);
+  }
+
+  function renderCarbonDetails() {
+    const carbon = data.carbon;
+    const kind = data.share.kind;
+    document.getElementById("carbon-group-title").textContent = kind === "project" ? "Carbon by project" : "Carbon by allocation";
+    const groupChart = document.getElementById("carbon-group-chart");
+    const totalKg = carbon.by_group.reduce((sum, row) => sum + row.value, 0);
+
+    if (carbon.by_group.length) {
+      horizontalBars(groupChart, carbon.by_group, (name) => seriesColor(kind, name),
+        (row) => `${tonnes(row.value)} · ${pct(totalKg ? row.value / totalKg : 0)}`,
+        (row, color) => [
+          { name: "central", value: tonnes(row.value), color },
+          { name: "range (low–high)", value: `${tonnes(row.low)}–${tonnes(row.high)}`, color: "transparent" },
+          { name: "energy", value: mwh(row.facility_kwh), color: "transparent" },
+        ]);
+    } else {
+      groupChart.replaceChildren(element("p", { class: "empty" }, "No usage yet."));
+    }
+
+    const queueChart = document.getElementById("carbon-queue-chart");
+    const queueTotal = carbon.by_queue.reduce((sum, row) => sum + row.value, 0);
+    const queueLabels = { production: "production", development: "development" };
+    if (carbon.by_queue.length) {
+      horizontalBars(queueChart, carbon.by_queue.map((row) => ({ ...row, name: queueLabels[row.name] || row.name })),
+        (name) => (data.series.queue.includes(name) ? seriesColor("queue", name) : "var(--series-other)"),
+        (row) => `${tonnes(row.value)} · ${pct(queueTotal ? row.value / queueTotal : 0)}`,
+        (row, color) => [
+          { name: "central", value: tonnes(row.value), color },
+          { name: "range (low–high)", value: `${tonnes(row.low)}–${tonnes(row.high)}`, color: "transparent" },
+          { name: "energy", value: mwh(row.facility_kwh), color: "transparent" },
+        ]);
+    } else {
+      queueChart.replaceChildren(element("p", { class: "empty" }, "No usage yet."));
+    }
+
+    const measured = carbon.measured_it_kwh;
+    const modelled = carbon.modelled_it_kwh.central;
+    const totalKwh = measured + modelled;
+    const measuredShare = totalKwh ? measured / totalKwh : 0;
+    document.getElementById("measured-sub").textContent =
+      `IT energy (before PUE), central estimate: ${mwh(totalKwh)}`;
+    const split = document.getElementById("measured-split");
+    split.setAttribute("aria-label", `${pct(measuredShare)} measured, ${pct(1 - measuredShare)} modelled`);
+    const parts = [
+      { name: "Measured by MN5 (IPMI)", value: measured, color: "var(--series-1)" },
+      { name: "Modelled", value: modelled, color: "var(--meter-track)" },
+    ];
+    split.replaceChildren(...parts.filter((part) => part.value > 0).map((part) => {
+      const segment = element("span");
+      segment.style.width = `${(part.value / (totalKwh || 1)) * 100}%`;
+      segment.style.background = part.color;
+      segment.title = `${part.name}: ${mwh(part.value)}`;
+      return segment;
+    }));
+    renderLegend(document.getElementById("measured-legend"),
+      parts.map((part) => ({ name: `${part.name} · ${mwh(part.value)} (${pct(totalKwh ? part.value / totalKwh : 0)})`, color: part.color })));
+    document.getElementById("measured-note").textContent =
+      "MN5 records energy only on GPP nodes, per whole node; only exclusive full-node jobs are used as measured. " +
+      "ACC (GPU) energy is always modelled, so the range mostly reflects the GPU utilisation assumption.";
+
+    const table = document.getElementById("assumptions-table");
+    renderTable(table, ["Parameter", "Value", "Source / status"],
+      carbon.assumptions.map((row) => [row.parameter, row.value, row.source]));
+  }
+
+  function renderPanel(panel) {
+    const card = element("div", { class: "panel" });
+    card.append(
+      element("h3", {}, `${panel.account} · ${panel.title}`),
+      element("p", { class: "panel-sub" },
+        `${full(panel.used_node_hours)} of ${full(panel.budget_node_hours)} node-h (${Math.round(panel.used_pct)}%)` +
+        (panel.expiration_date ? ` · expires ${panel.expiration_date} (${panel.days_to_expiry} d)` : "")),
+    );
+    const meter = element("div", { class: "meter", role: "meter", "aria-valuenow": String(panel.used_pct), "aria-valuemin": "0", "aria-valuemax": "100" });
+    const fill = element("span");
+    fill.style.width = Math.min(panel.used_pct, 100) + "%";
+    if (panel.used_pct >= 80) fill.style.background = "var(--status-warning)";
+    meter.append(fill);
+    card.append(meter);
+
+    const chart = element("div", { class: "chart" });
+    card.append(chart);
+    requestAnimationFrame(() => drawPanelChart(chart, panel));
+    return card;
+  }
+
+  function drawPanelChart(container, panel) {
+    const width = Math.max(container.clientWidth, 240);
+    const height = 150;
+    const margin = { top: 8, right: 10, bottom: 22, left: 44 };
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    const toTime = (day) => new Date(day + "T00:00:00Z").getTime();
+    const dates = [...panel.own_series.map((point) => point.date), ...panel.snapshots.map((point) => point.date), data.today];
+    if (panel.start) dates.push(panel.start);
+    if (panel.expiration_date) dates.push(panel.expiration_date);
+    const minTime = Math.min(...dates.map(toTime));
+    const maxTime = Math.max(...dates.map(toTime));
+    const span = Math.max(maxTime - minTime, 86400000);
+    const maxValue = niceMax(Math.max(panel.budget_node_hours, ...panel.snapshots.map((point) => point.value), 1) * 1.05);
+    const xOf = (day) => ((toTime(day) - minTime) / span) * plotWidth;
+    const yOf = (value) => plotHeight - (value / maxValue) * plotHeight;
+    const color = seriesColor("account", panel.account);
+    const svg = svgElement("svg", { viewBox: `0 0 ${width} ${height}`, height, role: "img", "aria-label": `${panel.account} burn-down` });
+    const plot = svgElement("g", { transform: `translate(${margin.left},${margin.top})` });
+    svg.append(plot);
+
+    for (let tick = 0; tick <= 2; tick++) {
+      const value = (maxValue / 2) * tick;
+      plot.append(svgElement("line", { x1: 0, x2: plotWidth, y1: yOf(value), y2: yOf(value), stroke: "var(--grid)" }));
+      const label = svgElement("text", { x: -8, y: yOf(value) + 4, "text-anchor": "end" });
+      label.textContent = compact(value);
+      plot.append(label);
+    }
+
+    [minTime, maxTime].forEach((time, index) => {
+      const label = svgElement("text", { x: index ? plotWidth : 0, y: plotHeight + 16, "text-anchor": index ? "end" : "start" });
+      label.textContent = new Date(time).toISOString().slice(0, 7);
+      plot.append(label);
+    });
+
+    plot.append(svgElement("line", { x1: 0, x2: plotWidth, y1: yOf(panel.budget_node_hours), y2: yOf(panel.budget_node_hours),
+      stroke: "var(--text-secondary)", "stroke-dasharray": "5 4", "stroke-width": 1.5 }));
+
+    if (panel.expiration_date) {
+      const x = xOf(panel.expiration_date);
+      plot.append(svgElement("line", { x1: x, x2: x, y1: 0, y2: plotHeight, stroke: "var(--border)", "stroke-width": 1.5 }));
+    }
+
+    const todayX = xOf(data.today);
+    plot.append(svgElement("line", { x1: todayX, x2: todayX, y1: 0, y2: plotHeight, stroke: "var(--grid)", "stroke-dasharray": "2 3" }));
+
+    if (panel.own_series.length) {
+      let path = `M${xOf(panel.own_series[0].date)},${plotHeight}`;
+      for (const point of panel.own_series) path += `H${xOf(point.date)}V${yOf(point.value)}`;
+      path += `H${todayX}`;
+      plot.append(svgElement("path", { d: path, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+    }
+
+    for (const snapshot of panel.snapshots) {
+      const dot = svgElement("circle", { cx: xOf(snapshot.date), cy: yOf(snapshot.value), r: 5, style: `fill:${color}`,
+        stroke: "var(--surface)", "stroke-width": 2, class: "mark", tabindex: 0 });
+      const rows = [{ name: "all users (bsc_acct)", value: `${full(snapshot.value)} node-h`, color }];
+      dot.addEventListener("pointermove", (event) => showTooltip(event, snapshot.date, rows));
+      dot.addEventListener("pointerleave", hideTooltip);
+      dot.addEventListener("focus", () => focusTooltip(dot, snapshot.date, rows));
+      dot.addEventListener("blur", hideTooltip);
+      plot.append(dot);
+    }
+
+    // Crosshair: snap to the nearest own-usage point.
+    const crosshair = svgElement("line", { y1: 0, y2: plotHeight, stroke: "var(--text-muted)", "stroke-width": 1, visibility: "hidden" });
+    plot.append(crosshair);
+    const hit = svgElement("rect", { x: 0, y: 0, width: plotWidth, height: plotHeight, fill: "transparent" });
+    hit.addEventListener("pointermove", (event) => {
+      if (!panel.own_series.length) return;
+      const box = hit.getBoundingClientRect();
+      const pointerX = ((event.clientX - box.left) / box.width) * plotWidth;
+      const nearest = panel.own_series.reduce((best, point) =>
+        Math.abs(xOf(point.date) - pointerX) < Math.abs(xOf(best.date) - pointerX) ? point : best);
+      crosshair.setAttribute("x1", xOf(nearest.date));
+      crosshair.setAttribute("x2", xOf(nearest.date));
+      crosshair.setAttribute("visibility", "visible");
+      showTooltip(event, nearest.date, [
+        { name: "your jobs, cumulative", value: `${full(nearest.value)} node-h`, color },
+        { name: "budget", value: `${full(panel.budget_node_hours)} node-h`, color: "var(--text-secondary)" },
+      ]);
+    });
+    hit.addEventListener("pointerleave", () => { crosshair.setAttribute("visibility", "hidden"); hideTooltip(); });
+    plot.insertBefore(hit, plot.firstChild);
+
+    container.replaceChildren(svg);
+  }
+
+  function renderPanels() {
+    const container = document.getElementById("panels");
+    if (!data.allocations.length) {
+      container.replaceChildren(element("p", { class: "empty" }, "No budgeted allocation visible in bsc_acct."));
+      return;
+    }
+    container.replaceChildren(...data.allocations.map(renderPanel));
+  }
+
+  function renderNotes() {
+    const notes = [...data.notes];
+    const coverage = data.scope.coverage;
+    if (coverage) {
+      notes.unshift(`Coverage: detailed data from ${coverage.members_with_detail} member(s)` +
+        (coverage.contributors.length ? ` (you, ${coverage.contributors.join(", ")})` : " (you)") +
+        `; bsc_acct totals for up to ${coverage.members_from_bsc_acct_only} others.`);
+      for (const item of coverage.invisible_allocations) notes.push(`${item.account}: ${item.reason}.`);
+    }
+    document.getElementById("notes").replaceChildren(...notes.map((note) => element("p", {}, note)));
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderTiles();
+    renderMonthly();
+    renderShare();
+    renderOutcomes();
+    renderCarbon();
+    renderCarbonDetails();
+    renderPanels();
+    renderNotes();
+  }
+
+  renderAll();
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { renderMonthly(); renderShare(); renderOutcomes(); renderCarbon(); renderCarbonDetails(); renderPanels(); }, 150);
+  });
+})();
+</script>
+</body>
+</html>

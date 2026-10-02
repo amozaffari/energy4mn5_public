@@ -1,0 +1,166 @@
+Set INTEL compilers as MPI wrappers backend
+load impi/2021.10.0 (PATH, MANPATH, LD_LIBRARY_PATH)
+load mkl/2023.2.0 (LD_LIBRARY_PATH)
+load UCX/1.15.0 (PATH, LD_LIBRARY_PATH, LIBRARY_PATH, C_INCLUDE_PATH,
+CPLUS_INCLUDE_PATH) 
+load bsc/1.0 (PATH, MANPATH)
+__BEGIN__
+
+---------------------------------------------------------------
+CPU GROUP BUDGET:
+[1mProject: [0mExample Research Group (bsc32)
+[1mProject's Expiration Date:[0m     undefined
+
+[1mMachine:                    Total (classA,classB)[khours]:          Used [khours]:[0m
+
+Marenostrum5 GPP                                 undefined               653113.27
+Marenostrum5 ACC                                 undefined                19321.98
+meepfpga                                         undefined                    0.00
+NG-Grace                                         undefined                    0.58
+Nord4                                            undefined                12616.01
+CTE-AMD                                          undefined                 9235.05
+---------------------------------------------------------------
+
+USER CONSUMED CPU:
+[1mUser:                                             Machine:          Used [khours]:[0m
+
+bsc900001 (Colleague 1)                              Nord4               17.14(0%)
+bsc900001 (Colleague 1)                       Marenostrum5 GPP             6171.86(1%)
+bsc900001 (Colleague 1)                       Marenostrum5 ACC                0.00(0%)
+bsc900002 (Colleague 2)                              Nord4                0.00(0%)
+bsc900002 (Colleague 2)                       Marenostrum5 GPP                0.00(0%)
+bsc900002 (Colleague 2)                       Marenostrum5 ACC                0.00(0%)
+bsc900003 (Colleague Long Placeholder Name Number)   Nord4                0.05(0%)
+bsc900003 (Colleague Long Placeholder Name Number)Marenostrum5 GPP                0.00(0%)
+bsc900003 (Colleague Long Placeholder Name Number)Marenostrum5 ACC                0.00(0%)
+---------------------------------------------------------------
+
+
+---------------------------------------------------------------
+CPU GROUP BUDGET:
+[1mProject: [0mGeoFM - Example allocation A (ehpc101)
+[1mProject's Expiration Date:[0m     2027-02-20
+
+[1mMachine:                    Total (classA,classB)[khours]:          Used [khours]:[0m
+
+Marenostrum5 GPP                                 undefined                    0.00
+Marenostrum5 ACC                        280.00 (0.00,0.00)            221.68 ([32m79%[0m)
+---------------------------------------------------------------
+
+USER CONSUMED CPU:
+[1mUser:                                             Machine:          Used [khours]:[0m
+
+bsc900004 (Colleague 4)                       Marenostrum5 GPP                0.00(0%)
+bsc900004 (Colleague 4)                       Marenostrum5 ACC              66.70(30%)
+bsc900005 (Colleague 5)                       Marenostrum5 GPP                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 ACC                0.00(0%)
+bsc900006 (Colleague 6)                       Marenostrum5 GPP                0.00(0%)
+bsc900006 (Colleague 6)                       Marenostrum5 ACC                0.00(0%)
+bsc900007 (Colleague 7)                       Marenostrum5 GPP                0.00(0%)
+bsc900007 (Colleague 7)                       Marenostrum5 ACC                0.31(0%)
+bsc900008 (Colleague 8)                       Marenostrum5 GPP                0.00(0%)
+bsc900008 (Colleague 8)                       Marenostrum5 ACC                0.00(0%)
+bsc900009 (Colleague 9)                       Marenostrum5 GPP                0.00(0%)
+bsc900009 (Colleague 9)                       Marenostrum5 ACC                0.00(0%)
+bsc900010 (Colleague 10)                      Marenostrum5 GPP                0.00(0%)
+bsc900010 (Colleague 10)                      Marenostrum5 ACC                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 GPP                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 ACC             154.58(70%)
+bsc000000 (Tracker User)                      Marenostrum5 GPP                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 ACC                0.03(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 GPP                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 ACC                0.04(0%)
+bsc900013 (Colleague 13)                   Marenostrum5 GPP                0.00(0%)
+bsc900013 (Colleague 13)                   Marenostrum5 ACC                0.00(0%)
+---------------------------------------------------------------
+
+
+---------------------------------------------------------------
+CPU GROUP BUDGET:
+[1mProject: [0mGeoFM-dev (ehpc102)
+[1mProject's Expiration Date:[0m     2027-05-04
+
+[1mMachine:                    Total (classA,classB)[khours]:          Used [khours]:[0m
+
+Marenostrum5 GPP                                 undefined                    0.00
+Marenostrum5 ACC                        280.00 (0.00,0.00)             13.59 ([32m05%[0m)
+---------------------------------------------------------------
+
+USER CONSUMED CPU:
+[1mUser:                                             Machine:          Used [khours]:[0m
+
+bsc900009 (Colleague 9)                       Marenostrum5 GPP                0.00(0%)
+bsc900009 (Colleague 9)                       Marenostrum5 ACC                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 GPP                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 ACC                0.00(0%)
+bsc900014 (Colleague 14)                      Marenostrum5 GPP                0.00(0%)
+bsc900014 (Colleague 14)                      Marenostrum5 ACC                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 GPP                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 ACC             13.59(100%)
+bsc900007 (Colleague 7)                       Marenostrum5 GPP                0.00(0%)
+bsc900007 (Colleague 7)                       Marenostrum5 ACC                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 GPP                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 ACC                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 GPP                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 ACC                0.00(0%)
+---------------------------------------------------------------
+
+
+---------------------------------------------------------------
+CPU GROUP BUDGET:
+[1mProject: [0mGeoFM - Example allocation C (ehpc103)
+[1mProject's Expiration Date:[0m     2026-12-10
+
+[1mMachine:                    Total (classA,classB)[khours]:          Used [khours]:[0m
+
+Marenostrum5 GPP                                 undefined                    0.00
+Marenostrum5 ACC                       5760.00 (0.00,0.00)            271.43 ([32m05%[0m)
+---------------------------------------------------------------
+
+USER CONSUMED CPU:
+[1mUser:                                             Machine:          Used [khours]:[0m
+
+bsc900007 (Colleague 7)                       Marenostrum5 GPP                0.00(0%)
+bsc900007 (Colleague 7)                       Marenostrum5 ACC                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 GPP                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 ACC             199.63(74%)
+bsc900011 (Colleague 11)                      Marenostrum5 GPP                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 ACC              67.25(25%)
+bsc900005 (Colleague 5)                       Marenostrum5 GPP                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 ACC                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 GPP                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 ACC                4.56(2%)
+---------------------------------------------------------------
+
+
+---------------------------------------------------------------
+CPU GROUP BUDGET:
+[1mProject: [0mGeoFM-bench (ehpc104)
+[1mProject's Expiration Date:[0m     2026-10-01
+
+[1mMachine:                    Total (classA,classB)[khours]:          Used [khours]:[0m
+
+Marenostrum5 GPP                                 undefined                    0.00
+Marenostrum5 ACC                        160.00 (0.00,0.00)              0.00 ([32m00%[0m)
+---------------------------------------------------------------
+
+USER CONSUMED CPU:
+[1mUser:                                             Machine:          Used [khours]:[0m
+
+bsc900015 (Colleague 15)                      Marenostrum5 GPP                0.00(0%)
+bsc900015 (Colleague 15)                      Marenostrum5 ACC                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 GPP                0.00(0%)
+bsc000000 (Tracker User)                      Marenostrum5 ACC                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 GPP                0.00(0%)
+bsc900011 (Colleague 11)                      Marenostrum5 ACC                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 GPP                0.00(0%)
+bsc900005 (Colleague 5)                       Marenostrum5 ACC                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 GPP                0.00(0%)
+bsc900012 (Colleague 12)                      Marenostrum5 ACC                0.00(0%)
+---------------------------------------------------------------
+
+
+
+Accounting updated on 2026-09-29 11:30:23
+
+__END__

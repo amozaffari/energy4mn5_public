@@ -1,0 +1,50 @@
+[project]
+name = "mn5-compute-tracker"
+version = "0.1.0"
+description = "Record, attribute and report HPC compute use on MareNostrum 5 across allocations."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Amirpasha Mozaffari", email = "amirpasha.mozaffari@gmail.com" }]
+dependencies = [
+  "matplotlib>=3.9.0,<4.0.0",
+  "pyyaml>=6.0.0,<7.0.0",
+  "rich>=13.7.0,<15.0.0",
+  "typer>=0.12.0,<1.0.0",
+]
+
+[project.scripts]
+mn5track = "mn5_tracker.cli:app"
+
+[dependency-groups]
+dev = [
+  "pre-commit>=4.0.0,<5.0.0",
+  "pytest>=8.0.0,<9.0.0",
+  "ruff>=0.15.0,<1.0.0",
+  "ty>=0.0.1a1",
+  "types-pyyaml>=6.0.0,<7.0.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.0,<1.0.0"]
+build-backend = "uv_build"
+
+[tool.uv]
+add-bounds = "major"
+
+[tool.uv.build-backend]
+module-root = "src"
+module-name = "mn5_tracker"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["A", "B", "E", "F", "I", "UP", "PTH", "RUF", "SIM"]
+allowed-confusables = ["×", "−", "–"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
